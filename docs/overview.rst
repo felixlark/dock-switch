@@ -24,7 +24,7 @@ Core Flow
 6. Display-moving arrows move the pointer to the center of the target display.
    App activation shortcuts move it to the center of the activated or placed window.
 7. The optional GoKit5 serial listener maps host-button events from
-   ``longbiaochen/open-embodied`` firmware to pointer display-selection actions
+   ``felixlark/open-embodied`` firmware to pointer display-selection actions
    across the left side, internal, external, and right side displays. It moves
    the pointer to the selected display center, clicks to activate the window at
    that point, and shows the mouse feedback ripple; it does not launch, create,

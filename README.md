@@ -155,7 +155,7 @@ Notes:
 - `displays` prints JSON with Electron display bounds and work areas.
 - `gokit5-status` prints the runtime serial listener state and selected port.
 - `codex-display` focuses an existing Codex window on the target display when available. If no Codex window exists on that display, it creates one there without moving windows from other displays. It always centers the pointer on the target display work area so repeated physical key presses do not drift with window bounds.
-- The GoKit5 serial listener auto-detects the Espressif USB JTAG/serial device and can be pinned with `GOKIT5_SERIAL_PORT=/dev/cu.usbmodem...`; set `DOCK_SWITCH_GOKIT5=0` to disable it. The matching firmware lives at [longbiaochen/open-embodied](https://github.com/felixlark/open-embodied).
+- The GoKit5 serial listener auto-detects the Espressif USB JTAG/serial device and can be pinned with `GOKIT5_SERIAL_PORT=/dev/cu.usbmodem...`; set `DOCK_SWITCH_GOKIT5=0` to disable it. The matching firmware lives at [felixlark/open-embodied](https://github.com/felixlark/open-embodied).
 
 ## Managed Chrome Windows
 Codex browser work should use the official Chrome plugin for signed-in Google Chrome state and the in-app browser for unauthenticated local or public pages. The profile-bound Chrome CLI helpers are retained only for lower-level window placement.

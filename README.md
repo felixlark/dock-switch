@@ -39,7 +39,7 @@ often expose menu bar state, Dock contents, account badges, and workspace detail
 - Press right `Command` for a reserved no-op.
 - Press `\` to focus or open `Terminal` on the right side display, maximized to the display work area.
 - App activation moves the pointer to the center of the activated or placed window; arrow display moves keep moving the pointer to the center of the target display.
-- A connected GoKit5 controller flashed with [open-embodied](https://github.com/longbiaochen/open-embodied) moves the pointer across displays and clicks the target point to activate the window there, without launching, creating, or moving app windows: minus = left side, plus = internal, voice = external, green/switch = right side. Missing external targets fall back to the internal main display.
+- A connected GoKit5 controller flashed with [open-embodied](https://github.com/felixlark/open-embodied) moves the pointer across displays and clicks the target point to activate the window there, without launching, creating, or moving app windows: minus = left side, plus = internal, voice = external, green/switch = right side. Missing external targets fall back to the internal main display.
 - The UI closes automatically after a selection.
 
 ## Browser Fixed Placement
@@ -114,7 +114,7 @@ To disable restore for a specific app, add:
 ```
 
 ## Installation
-- Download a release from [GitHub Releases](https://github.com/longbiaochen/dock-switch/releases).
+- Download a release from [GitHub Releases](https://github.com/felixlark/dock-switch/releases).
 
 ## Build From Source
 1. Clone this repository.
@@ -155,7 +155,7 @@ Notes:
 - `displays` prints JSON with Electron display bounds and work areas.
 - `gokit5-status` prints the runtime serial listener state and selected port.
 - `codex-display` focuses an existing Codex window on the target display when available. If no Codex window exists on that display, it creates one there without moving windows from other displays. It always centers the pointer on the target display work area so repeated physical key presses do not drift with window bounds.
-- The GoKit5 serial listener auto-detects the Espressif USB JTAG/serial device and can be pinned with `GOKIT5_SERIAL_PORT=/dev/cu.usbmodem...`; set `DOCK_SWITCH_GOKIT5=0` to disable it. The matching firmware lives at [longbiaochen/open-embodied](https://github.com/longbiaochen/open-embodied).
+- The GoKit5 serial listener auto-detects the Espressif USB JTAG/serial device and can be pinned with `GOKIT5_SERIAL_PORT=/dev/cu.usbmodem...`; set `DOCK_SWITCH_GOKIT5=0` to disable it. The matching firmware lives at [longbiaochen/open-embodied](https://github.com/felixlark/open-embodied).
 
 ## Managed Chrome Windows
 Codex browser work should use the official Chrome plugin for signed-in Google Chrome state and the in-app browser for unauthenticated local or public pages. The profile-bound Chrome CLI helpers are retained only for lower-level window placement.

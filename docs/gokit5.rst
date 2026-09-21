@@ -27,4 +27,4 @@ GoKit5 events move the pointer, click the selected display center to activate th
 Firmware
 --------
 
-The matching firmware is published at ``https://github.com/longbiaochen/open-embodied``.
+The matching firmware is published at ``https://github.com/felixlark/open-embodied``.

@@ -160,7 +160,7 @@ Notes:
 - The GoKit5 serial listener auto-detects the Espressif USB JTAG/serial device and can be pinned with `GOKIT5_SERIAL_PORT=/dev/cu.usbmodem...`; set `DOCK_SWITCH_GOKIT5=0` to disable it. The matching firmware lives at [felixlark/open-embodied](https://github.com/felixlark/open-embodied).
 
 ## Managed Chrome Windows
-Codex browser work should use the official Chrome plugin for signed-in Google Chrome state and the in-app browser for unauthenticated local or public pages. The profile-bound Chrome CLI helpers are retained only for lower-level window placement.
+Codex browser work should use IAB first. Use the official Chrome extension only for a verified dependency on the regular Chrome profile, and keep the profile-bound Chrome CLI helpers only for lower-level window placement; they are not browser-work fallbacks.
 
 Typical flow:
 

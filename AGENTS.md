@@ -56,13 +56,13 @@
 - Treat display labels as machine-specific runtime data; do not hard-code a maintainer's monitor names or local paths in public docs.
 
 ## Browser Automation Constraint
-- Follow the global `~/.codex/AGENTS.md` official browser/GUI automation policy: Chrome plugin for signed-in browser state, Browser plugin for unauthenticated rendering, and Computer Use for native desktop boundaries. Do not bypass it with AppleScript or `osascript` unless the global exception rules are met.
+- Follow the global `~/.codex/AGENTS.md` browser/GUI routing. Keep only this project's URL, account, extension, fixture, viewport, and acceptance details here; do not promote Chrome or `chrome-use` to a project-wide default.
 - Keep only repo-specific verification surfaces here; do not copy the full global policy block into this runbook.
 
-## Worktree Policy
+## Development Workflow
 
-- Follow the global `~/.codex/AGENTS.md` main-first development rule: work in the current Local checkout by default and use a worktree only when the global exception list applies.
-- Branch names should use `codex/<repo>-<short-task>`; manual long-lived worktree directories should use `~/Projects/<repo>-<short-task>`.
-- Initialize dependencies inside each worktree and keep ports, databases, device/simulator state, build outputs, and ignored local config isolated per checkout.
-- Preserve existing dirty checkouts. Inspect `git status --short` before editing, and do not stash, commit, remove, or migrate user changes unless explicitly asked.
-- After merge or abandonment, clean up with `git worktree remove <path>` and use `git worktree prune` only for stale metadata.
+- Follow the global `~/.codex/AGENTS.md` and workspace `/Users/longbiao/Documents/AGENTS.md` development workflow: work in the canonical checkout with one writer and do not create new worktrees.
+- Use a task branch in the canonical checkout only when the task needs one; do not create manual worktree directories.
+- Put reusable build caches and DerivedData in `~/Library/Caches/<project-id>/`, durable work products in `~/Local/<project-id>/`, and one-run scratch under `$TMPDIR`; pass output paths explicitly.
+- Preserve existing dirty checkouts. Inspect `git status --short` before editing, and do not stash, commit, remove, migrate or clean user changes and pre-existing residue unless explicitly asked with an exact scope.
+- Existing worktrees and other pre-existing noncompliant residue stay read-only unless the user explicitly requests an exact cleanup or migration scope.

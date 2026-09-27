@@ -139,13 +139,10 @@ struct SettingsRowView: View {
                         .frame(width: 52, height: 26)
                         .background(.quaternary, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
                 } else {
-                    TextField("", text: Binding(
-                        get: { row.key },
-                        set: { store.update(rowID: row.id, key: $0) }
-                    ))
-                    .textFieldStyle(.roundedBorder)
-                    .multilineTextAlignment(.center)
-                    .frame(width: 74)
+                    LauncherKeyRecorder(key: row.key) { key in
+                        store.update(rowID: row.id, key: key)
+                    }
+                    .frame(width: 74, height: 24)
                 }
             }
             .frame(width: 86)

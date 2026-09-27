@@ -393,8 +393,10 @@ final class DockSwitchApp: NSObject, NSApplicationDelegate {
             return
         }
         lastModifierShortcut = (normalizedKey, Date())
+        // Resolve before hiding: hideLauncher() clears currentTargets.
+        let target = item(forNormalizedKey: normalizedKey)
         hideLauncher()
-        if let item = item(forNormalizedKey: normalizedKey) {
+        if let item = target {
             launcherService.activate(item)
             return
         }

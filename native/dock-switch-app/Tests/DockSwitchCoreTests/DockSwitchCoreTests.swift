@@ -343,6 +343,31 @@ final class DockSwitchCoreTests: XCTestCase {
         XCTAssertEqual(claude?.openPath, "/Applications/Claude.app")
     }
 
+    func testDirectModifierShortcutFollowsReassignedKeys() {
+        func item(_ name: String, _ key: String, _ placement: String) -> LauncherConfigItem {
+            LauncherConfigItem(name: name, key: key, screen: nil, kind: nil, placement: placement, openPath: nil, appURL: nil)
+        }
+        let config = LauncherConfig(dockItems: [
+            item("Claude", "LEFT_SHIFT", "external_fill"),
+            item("ChatGPT", "RIGHT_SHIFT", "side_right_fill")
+        ])
+
+        let chatGPT = LauncherShortcutRules.launcherItem(for: "RIGHT_SHIFT", config: config)
+        XCTAssertEqual(chatGPT?.name, "ChatGPT")
+        XCTAssertEqual(chatGPT?.key, "RIGHT_SHIFT")
+        XCTAssertEqual(chatGPT?.icon, "R⇧")
+        XCTAssertEqual(chatGPT?.placement, "side_right_fill")
+
+        let claude = LauncherShortcutRules.launcherItem(for: "LEFT_SHIFT", config: config)
+        XCTAssertEqual(claude?.name, "Claude")
+        XCTAssertEqual(claude?.placement, "external_fill")
+        XCTAssertEqual(claude?.openPath, "/Applications/Claude.app")
+
+        // A default app that was moved to another key no longer answers its old key.
+        let moved = LauncherConfig(dockItems: [item("Claude", "LEFT_SHIFT", "external_fill")])
+        XCTAssertNil(LauncherShortcutRules.launcherItem(for: "RIGHT_SHIFT", config: moved))
+    }
+
     func testLauncherServiceShowsMouseFeedbackAfterPlacedAppMouseMove() {
         let placement = FakeLauncherWindowPlacement()
         placement.placeProcessResult = WindowActionResult(ok: true, feedbackPoint: CGPoint(x: 420, y: 240))

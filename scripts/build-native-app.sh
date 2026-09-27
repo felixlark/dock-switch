@@ -3,7 +3,6 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 PACKAGE_DIR="$ROOT_DIR/native/dock-switch-app"
-BUILD_DIR="$PACKAGE_DIR/.build/arm64-apple-macosx/release"
 APP_DIR="$ROOT_DIR/dist/native/dock-switch.app"
 CONTENTS_DIR="$APP_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
@@ -14,6 +13,9 @@ DEFAULT_IDENTITY="Developer ID Application: LONGBIAO CHEN (HJG65XBC25)"
 IDENTITY="${CSC_NAME:-$DEFAULT_IDENTITY}"
 
 swift build --package-path "$PACKAGE_DIR" -c release --arch arm64
+# Newer SwiftPM releases moved products out of .build/<triple>/release; ask
+# SwiftPM for the real location so a stale binary is never packaged.
+BUILD_DIR="$(swift build --package-path "$PACKAGE_DIR" -c release --arch arm64 --show-bin-path)"
 
 rm -rf "$APP_DIR"
 mkdir -p "$MACOS_DIR" "$APP_RESOURCES_DIR/src" "$APP_RESOURCES_DIR/bin"

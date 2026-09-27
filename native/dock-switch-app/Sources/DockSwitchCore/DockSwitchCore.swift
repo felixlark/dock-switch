@@ -204,11 +204,18 @@ public enum LauncherShortcutRules {
         for normalizedKey: String,
         config: LauncherConfig = .empty
     ) -> LauncherItem? {
-        guard let appName = appName(for: normalizedKey) else { return nil }
+        // A key saved in Settings wins over the built-in default app for that key.
         let configured = config.dockItems.first(where: {
-            LauncherRules.normalizeAppName($0.name) == LauncherRules.normalizeAppName(appName) &&
-                LauncherRules.normalizeKey($0.key ?? "") == normalizedKey
+            LauncherRules.normalizeKey($0.key ?? "") == normalizedKey
         })
+        let defaultAppName = appName(for: normalizedKey)
+        if configured == nil, let defaultAppName, config.dockItems.contains(where: {
+            LauncherRules.normalizeAppName($0.name) == LauncherRules.normalizeAppName(defaultAppName) &&
+                !LauncherRules.normalizeKey($0.key ?? "").isEmpty
+        }) {
+            return nil
+        }
+        guard let appName = configured?.name ?? defaultAppName else { return nil }
         guard let special = LauncherRules.specialItem(for: appName) else {
             return LauncherItem(
                 name: configured?.name ?? appName,

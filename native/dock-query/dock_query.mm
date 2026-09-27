@@ -35,6 +35,9 @@ static id gMouseDownMonitor = nil;
 static std::thread gMouseDownTapThread;
 static std::atomic<bool> gMouseDownTapRunning(false);
 
+static bool GetRequiredUtf8Property(napi_env env, napi_value obj, const char* key,
+                                    std::string* out);
+
 static CFTypeRef CopyAXAttr(AXUIElementRef element, CFStringRef attr) {
   CFTypeRef value = nullptr;
   AXError err = AXUIElementCopyAttributeValue(element, attr, &value);
@@ -892,6 +895,52 @@ static napi_value PressKeyCode(napi_env env, napi_callback_info info) {
 
   CGEventPost(kCGHIDEventTap, down);
   usleep(20000);
+  CGEventPost(kCGHIDEventTap, up);
+  CFRelease(down);
+  CFRelease(up);
+
+  napi_value out;
+  napi_get_boolean(env, true, &out);
+  return out;
+}
+
+static napi_value IsCommandPressed(napi_env env, napi_callback_info info) {
+  CGEventFlags flags = CGEventSourceFlagsState(kCGEventSourceStateCombinedSessionState);
+  napi_value out;
+  napi_get_boolean(env, (flags & kCGEventFlagMaskCommand) != 0, &out);
+  return out;
+}
+
+static napi_value InsertText(napi_env env, napi_callback_info info) {
+  size_t argc = 1;
+  napi_value argv[1];
+  napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr);
+  if (argc < 1) return MakeError(env, "Expected {text}");
+
+  std::string text;
+  if (!GetRequiredUtf8Property(env, argv[0], "text", &text) || text.empty()) {
+    return MakeError(env, "text is required");
+  }
+
+  NSString* phrase = [NSString stringWithUTF8String:text.c_str()];
+  if (!phrase || [phrase length] == 0) return MakeError(env, "text is invalid");
+
+  NSUInteger length = [phrase length];
+  std::vector<UniChar> characters(length);
+  [phrase getCharacters:characters.data() range:NSMakeRange(0, length)];
+
+  CGEventRef down = CGEventCreateKeyboardEvent(nullptr, 0, true);
+  CGEventRef up = CGEventCreateKeyboardEvent(nullptr, 0, false);
+  if (!down || !up) {
+    if (down) CFRelease(down);
+    if (up) CFRelease(up);
+    return MakeError(env, "Failed to create text input event");
+  }
+
+  CGEventKeyboardSetUnicodeString(down, length, characters.data());
+  CGEventSetFlags(down, 0);
+  CGEventSetFlags(up, 0);
+  CGEventPost(kCGHIDEventTap, down);
   CGEventPost(kCGHIDEventTap, up);
   CFRelease(down);
   CFRelease(up);
@@ -1827,6 +1876,14 @@ static napi_value Init(napi_env env, napi_value exports) {
   napi_create_function(env, "pressKeyCode", NAPI_AUTO_LENGTH, PressKeyCode,
                        nullptr, &pressKeyCodeFn);
   napi_set_named_property(env, exports, "pressKeyCode", pressKeyCodeFn);
+  napi_value isCommandPressedFn;
+  napi_create_function(env, "isCommandPressed", NAPI_AUTO_LENGTH,
+                       IsCommandPressed, nullptr, &isCommandPressedFn);
+  napi_set_named_property(env, exports, "isCommandPressed", isCommandPressedFn);
+  napi_value insertTextFn;
+  napi_create_function(env, "insertText", NAPI_AUTO_LENGTH, InsertText,
+                       nullptr, &insertTextFn);
+  napi_set_named_property(env, exports, "insertText", insertTextFn);
   napi_value moveAppFn;
   napi_create_function(env, "moveApplicationWindow", NAPI_AUTO_LENGTH,
                        MoveApplicationWindow, nullptr, &moveAppFn);

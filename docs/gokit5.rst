@@ -22,6 +22,15 @@ The firmware sends host-button events that move the pointer to display targets a
 - ``green`` -> right side display center
 - ``switch`` -> right side display center
 
+Hold ``Command`` while pressing a button to insert a fixed phrase at the current caret instead of moving the pointer:
+
+- ``voice`` -> ``/goal``
+- ``plus`` -> ``/plan``
+- ``green``/``switch`` -> ``side chat``
+- ``minus`` -> ``continue``
+
+Phrase input does not inspect the foreground application and does not press Return or submit.
+
 GoKit5 events move the pointer, click the selected display center to activate the window at that point, and show the mouse feedback ripple. They do not launch, create, or move application windows. If a requested external or side display is not connected, dock-switch falls back to the internal main display work area.
 
 Firmware

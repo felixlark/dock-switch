@@ -23,7 +23,10 @@ const {
 } = require("./launcher-items");
 const { buildReadableOverlayTarget } = require("./launcher-overlay-view");
 const { setupControlServer } = require("./control-server");
-const { createGokit5SerialListener } = require("./gokit5-serial");
+const {
+    createGokit5SerialListener,
+    mapGokit5ButtonToInputPhrase
+} = require("./gokit5-serial");
 const {
     resolveOpenPath,
     findAppProcessPidByOpenPath,
@@ -958,9 +961,21 @@ function setup_gokit5_serial_listener(controlDeps) {
         },
         onAction: (action, event) => {
             if (!action) return;
+            var inputPhrase = "";
+            if (dock_query
+                && typeof dock_query.isCommandPressed === "function"
+                && dock_query.isCommandPressed()) {
+                inputPhrase = mapGokit5ButtonToInputPhrase(event && event.button);
+            }
             gokit5_action_inflight = gokit5_action_inflight
                 .catch(() => {})
                 .then(() => {
+                    if (inputPhrase && typeof dock_query.insertText === "function") {
+                        return {
+                            ok: !!dock_query.insertText({ text: inputPhrase }),
+                            phrase: inputPhrase
+                        };
+                    }
                     if (action.mouse_target) {
                         var result = moveMouseToDisplayTargetWithFeedback(
                             dock_query,

@@ -1252,6 +1252,21 @@ public enum Gokit5Serial {
         }
     }
 
+    public static func inputPhrase(for button: String) -> String? {
+        switch normalizeButton(button) {
+        case "voice":
+            return "/goal"
+        case "plus":
+            return "/plan"
+        case "green", "switch":
+            return "side chat"
+        case "minus":
+            return "continue"
+        default:
+            return nil
+        }
+    }
+
     public static func parseButtonLine(_ line: String) -> String {
         guard let range = line.range(of: hostButtonPrefix) else { return "" }
         let raw = line[range.upperBound...]
@@ -1290,6 +1305,39 @@ public enum Gokit5Serial {
             }
         }
         return Array(NSOrderedSet(array: ports)) as? [String] ?? ports
+    }
+}
+
+public enum KeyboardShortcutInput {
+    public static func isCommandPressed() -> Bool {
+        CGEventSource.flagsState(.combinedSessionState).contains(.maskCommand)
+    }
+
+    public static func makeTextEvents(_ text: String) -> [CGEvent]? {
+        let characters = Array(text.utf16)
+        guard !characters.isEmpty,
+              let down = CGEvent(keyboardEventSource: nil, virtualKey: 0, keyDown: true),
+              let up = CGEvent(keyboardEventSource: nil, virtualKey: 0, keyDown: false) else {
+            return nil
+        }
+        characters.withUnsafeBufferPointer { buffer in
+            down.keyboardSetUnicodeString(
+                stringLength: buffer.count,
+                unicodeString: buffer.baseAddress
+            )
+        }
+        down.flags = []
+        up.flags = []
+        return [down, up]
+    }
+
+    @discardableResult
+    public static func insertText(_ text: String) -> Bool {
+        guard let events = makeTextEvents(text) else { return false }
+        for event in events {
+            event.post(tap: .cghidEventTap)
+        }
+        return true
     }
 }
 

@@ -8,6 +8,7 @@ const {
     extractGokit5PortPathsFromIoregText,
     findGokit5SerialPort,
     mapGokit5ButtonToAction,
+    mapGokit5ButtonToInputPhrase,
     parseGokit5ButtonLine,
     shouldDispatchButton
 } = require("../src/gokit5-serial");
@@ -19,6 +20,15 @@ test("parseGokit5ButtonLine extracts stable host button events from ESP logs", (
     assert.equal(parseGokit5ButtonLine("GOKIT5_HOST_BUTTON:green"), "green");
     assert.equal(parseGokit5ButtonLine("GOKIT5_HOST_BUTTON:switch"), "switch");
     assert.equal(parseGokit5ButtonLine("I (123) VolcRTCApp: Heap Info"), "");
+});
+
+test("mapGokit5ButtonToInputPhrase maps Command-modified buttons to text only", () => {
+    assert.equal(mapGokit5ButtonToInputPhrase("voice"), "/goal");
+    assert.equal(mapGokit5ButtonToInputPhrase("plus"), "/plan");
+    assert.equal(mapGokit5ButtonToInputPhrase("green"), "side chat");
+    assert.equal(mapGokit5ButtonToInputPhrase("switch"), "side chat");
+    assert.equal(mapGokit5ButtonToInputPhrase("minus"), "continue");
+    assert.equal(mapGokit5ButtonToInputPhrase("unknown"), "");
 });
 
 test("parseGokit5ButtonLine rejects removed plus aliases", () => {

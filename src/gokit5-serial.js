@@ -25,6 +25,14 @@ const BUTTON_TO_APP_ACTION = Object.freeze({
     })
 });
 
+const BUTTON_TO_INPUT_PHRASE = Object.freeze({
+    voice: "/goal",
+    plus: "/plan",
+    green: "side chat",
+    switch: "side chat",
+    minus: "continue"
+});
+
 function normalizeGokit5ButtonName(button) {
     const key = String(button || "").trim().toLowerCase().replace(/-/g, "_");
     return key;
@@ -33,6 +41,10 @@ function normalizeGokit5ButtonName(button) {
 function mapGokit5ButtonToAction(button) {
     const action = BUTTON_TO_APP_ACTION[normalizeGokit5ButtonName(button)];
     return action ? Object.assign({}, action) : null;
+}
+
+function mapGokit5ButtonToInputPhrase(button) {
+    return BUTTON_TO_INPUT_PHRASE[normalizeGokit5ButtonName(button)] || "";
 }
 
 function parseGokit5ButtonLine(line) {
@@ -330,10 +342,12 @@ function createGokit5SerialListener(options = {}) {
 
 module.exports = {
     BUTTON_TO_APP_ACTION,
+    BUTTON_TO_INPUT_PHRASE,
     DEFAULT_SERIAL_NUMBER,
     HOST_BUTTON_PREFIX,
     normalizeGokit5ButtonName,
     mapGokit5ButtonToAction,
+    mapGokit5ButtonToInputPhrase,
     parseGokit5ButtonLine,
     shouldDispatchButton,
     extractGokit5PortPathsFromIoregText,

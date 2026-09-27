@@ -13,6 +13,7 @@ dock-switch 现在可以通过串口监听连接的 GoKit5 / 机智云控制器�
 - dock-switch 启动后会自动开始串口监听。
 - GoKit5 USB 串口会自动识别，也可以用 `GOKIT5_SERIAL_PORT=/dev/cu.usbmodem...` 固定端口。
 - 物理按键移动鼠标并点击激活目标点窗口：minus = 左侧边屏，plus = 内置屏，voice = 外接屏，green/switch = 右侧边屏；目标外屏未连接时退回内置主屏。
+- 按住 `Command` 再按物理键时，只向当前光标位置输入固定短语：voice = `/goal`，plus = `/plan`，green/switch = `side chat`，minus = `continue`；不判断前台应用，也不自动按回车或提交。
 - `dock-switch-cli gokit5-status` 可以查看监听是否启用、是否运行，以及当前使用的串口。
 - 设置 `DOCK_SWITCH_GOKIT5=0` 可以关闭串口监听。
 
@@ -40,6 +41,7 @@ often expose menu bar state, Dock contents, account badges, and workspace detail
 - Press `\` to focus or open `Terminal` on the right side display, maximized to the display work area.
 - App activation moves the pointer to the center of the activated or placed window; arrow display moves keep moving the pointer to the center of the target display.
 - A connected GoKit5 controller flashed with [open-embodied](https://github.com/felixlark/open-embodied) moves the pointer across displays and clicks the target point to activate the window there, without launching, creating, or moving app windows: minus = left side, plus = internal, voice = external, green/switch = right side. Missing external targets fall back to the internal main display.
+- Holding `Command` while pressing a GoKit5 button inputs a fixed phrase at the current caret only: voice = `/goal`, plus = `/plan`, green/switch = `side chat`, and minus = `continue`. It does not inspect the foreground app or press Return/submit.
 - The UI closes automatically after a selection.
 
 ## Browser Fixed Placement

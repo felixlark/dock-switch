@@ -153,9 +153,16 @@ final class DockSwitchApp: NSObject, NSApplicationDelegate {
         if ProcessInfo.processInfo.environment["DOCK_SWITCH_GOKIT5"] == "0" {
             return
         }
-        let listener = Gokit5SerialListener { [weak self] action, _, _ in
+        let listener = Gokit5SerialListener { [weak self] action, button, _ in
             guard let self else { return }
+            let inputPhrase = KeyboardShortcutInput.isCommandPressed()
+                ? Gokit5Serial.inputPhrase(for: button)
+                : nil
             DispatchQueue.main.async {
+                if let phrase = inputPhrase {
+                    _ = KeyboardShortcutInput.insertText(phrase)
+                    return
+                }
                 if let target = action.mouseTarget {
                     let result = self.windowPlacementService.moveMouseToDisplayTarget(target)
                     if result.ok, let point = result.feedbackPoint {

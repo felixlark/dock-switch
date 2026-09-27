@@ -625,6 +625,35 @@ final class DockSwitchCoreTests: XCTestCase {
         XCTAssertNil(Gokit5Serial.action(for: "add"))
         XCTAssertNil(Gokit5Serial.action(for: "volume-up"))
         XCTAssertNil(Gokit5Serial.action(for: "volume+"))
+
+        XCTAssertEqual(Gokit5Serial.inputPhrase(for: "voice"), "/goal")
+        XCTAssertEqual(Gokit5Serial.inputPhrase(for: "plus"), "/plan")
+        XCTAssertEqual(Gokit5Serial.inputPhrase(for: "green"), "side chat")
+        XCTAssertEqual(Gokit5Serial.inputPhrase(for: "switch"), "side chat")
+        XCTAssertEqual(Gokit5Serial.inputPhrase(for: "minus"), "continue")
+        XCTAssertNil(Gokit5Serial.inputPhrase(for: "unknown"))
+    }
+
+    func testKeyboardShortcutInputCreatesUnicodeTextWithoutCommandOrReturn() {
+        let events = KeyboardShortcutInput.makeTextEvents("/goal")
+        XCTAssertEqual(events?.count, 2)
+        XCTAssertEqual(events?.first?.type, .keyDown)
+        XCTAssertEqual(events?.last?.type, .keyUp)
+        XCTAssertEqual(events?.first?.flags, [])
+        XCTAssertEqual(events?.last?.flags, [])
+        XCTAssertEqual(events?.first?.getIntegerValueField(.keyboardEventKeycode), 0)
+        XCTAssertNotEqual(events?.first?.getIntegerValueField(.keyboardEventKeycode), Int64(kVK_Return))
+
+        var actualLength = 0
+        var characters = [UniChar](repeating: 0, count: 16)
+        characters.withUnsafeMutableBufferPointer { buffer in
+            events?.first?.keyboardGetUnicodeString(
+                maxStringLength: buffer.count,
+                actualStringLength: &actualLength,
+                unicodeString: buffer.baseAddress
+            )
+        }
+        XCTAssertEqual(String(utf16CodeUnits: characters, count: actualLength), "/goal")
     }
 
     func testGokit5DiagnosticLineDetection() {

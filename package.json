@@ -24,7 +24,7 @@
         "build:native": "bash scripts/build-native-app.sh",
         "build:addon": "PYTHON=/usr/bin/python3 node-gyp rebuild --directory native/dock-query --target=$(node -p \"require('electron/package.json').version\") --dist-url=https://electronjs.org/headers",
         "go": "yarn build:addon; killall -9 dock-switch; electron .",
-        "dist": "yarn build:settings && yarn build:native && (killall -9 DockSwitch DockSwitchGokit5Serial dock-switch-runtime dock-switch || true) && rm -rf /Applications/dock-switch.app && cp -Rf dist/native/dock-switch.app /Applications/ && /usr/bin/open -n /Applications/dock-switch.app",
+        "dist": "yarn build:settings && yarn build:native && bash scripts/install-native-app.sh",
         "dist:signed": "yarn build:settings && yarn build:addon && CSC_NAME='Apple Development: LONGBIAO CHEN (YRQ5DV25KM)' electron-builder --mac dir"
     },
     "license": "MIT",

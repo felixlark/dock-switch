@@ -103,11 +103,24 @@ if [[ -z "$IDENTITY" ]] || ! security find-identity -v -p codesigning | grep -q 
   exit 1
 fi
 
-if [[ -d "$RESOURCES_DIR/DockSwitchSettings.app" ]]; then
-  /usr/bin/codesign --force --options runtime --timestamp --sign "$IDENTITY" "$RESOURCES_DIR/DockSwitchSettings.app"
+SIGNING_DIR="$(mktemp -d "${TMPDIR:-/tmp}/dock-switch-sign.XXXXXX")"
+SIGNING_APP="$SIGNING_DIR/dock-switch.app"
+trap 'rm -rf "$SIGNING_DIR"' EXIT
+
+# File Provider-backed workspaces can reattach Finder metadata between xattr
+# cleanup and codesign. Sign outside the workspace, then copy the sealed bundle
+# back without resource forks or extended attributes.
+/usr/bin/ditto --norsrc --noextattr "$APP_DIR" "$SIGNING_APP"
+/usr/bin/xattr -cr "$SIGNING_APP"
+if [[ -d "$SIGNING_APP/Contents/Resources/DockSwitchSettings.app" ]]; then
+  /usr/bin/codesign --force --options runtime --timestamp --sign "$IDENTITY" "$SIGNING_APP/Contents/Resources/DockSwitchSettings.app"
 fi
 
-/usr/bin/codesign --force --options runtime --timestamp --sign "$IDENTITY" "$RESOURCES_DIR/DockSwitchGokit5Serial"
-/usr/bin/codesign --force --options runtime --timestamp --sign "$IDENTITY" --entitlements "$ENTITLEMENTS" "$APP_DIR"
+/usr/bin/codesign --force --options runtime --timestamp --sign "$IDENTITY" "$SIGNING_APP/Contents/Resources/DockSwitchGokit5Serial"
+/usr/bin/codesign --force --options runtime --timestamp --sign "$IDENTITY" --entitlements "$ENTITLEMENTS" "$SIGNING_APP"
+/usr/bin/codesign --verify --deep --strict "$SIGNING_APP"
+
+rm -rf "$APP_DIR"
+/usr/bin/ditto --norsrc --noextattr "$SIGNING_APP" "$APP_DIR"
 
 echo "$APP_DIR"

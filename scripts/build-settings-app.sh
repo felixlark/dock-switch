@@ -77,6 +77,10 @@ if [[ -z "$IDENTITY" ]] || ! security find-identity -v -p codesigning | grep -q 
   exit 1
 fi
 
+# File Provider-backed workspaces can attach metadata to newly-created bundle
+# contents. Strip it immediately before signing so it cannot be reintroduced
+# while the signing identity is being resolved.
+/usr/bin/xattr -cr "$APP_DIR"
 /usr/bin/codesign --force --options runtime --timestamp --sign "$IDENTITY" "$APP_DIR"
 
 echo "$APP_DIR"

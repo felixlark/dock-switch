@@ -230,6 +230,39 @@ final class DockSwitchCoreTests: XCTestCase {
         XCTAssertEqual(layout!.windowFrameAX, DSRect(x: 172, y: 1302, width: 120, height: 60))
     }
 
+    func testBottomDockOverlayDoesNotDoubleApplyPositiveDisplayOriginWhenDockCoordinatesAreGlobal() {
+        let externalMainDisplay = DisplaySnapshot(
+            id: 4,
+            internalDisplay: false,
+            bounds: DSRect(x: 0, y: 0, width: 2560, height: 1440),
+            workArea: DSRect(x: 0, y: 30, width: 2560, height: 1410),
+            scaleFactor: 2,
+            label: "DELL U3219Q"
+        )
+        let internalDisplay = DisplaySnapshot(
+            id: 1,
+            internalDisplay: true,
+            bounds: DSRect(x: 535, y: 1440, width: 1512, height: 982),
+            workArea: DSRect(x: 535, y: 1473, width: 1512, height: 875),
+            scaleFactor: 2,
+            label: "Built-in Retina Display"
+        )
+        let dockFrame = DSRect(x: 595, y: 2348, width: 1265, height: 74)
+        let dockItems = [
+            DockItemSnapshot(name: "Finder", pos: CGPoint(x: 603, y: 2362), size: CGSize(width: 52, height: 52), containerFrame: dockFrame),
+            DockItemSnapshot(name: "Safari", pos: CGPoint(x: 663, y: 2362), size: CGSize(width: 52, height: 52), containerFrame: dockFrame)
+        ]
+        let launcherItems = LauncherRules.buildLauncherItems(dockItems: dockItems, config: .empty)
+        let layout = OverlayLayoutService().resolve(
+            launcherItems: launcherItems,
+            displays: [externalMainDisplay, internalDisplay]
+        )
+
+        XCTAssertNotNil(layout)
+        XCTAssertEqual(layout!.windowFrameAX, DSRect(x: 595, y: 2288, width: 128, height: 60))
+        XCTAssertLessThanOrEqual(layout!.windowFrameAX.maxY, internalDisplay.workArea.maxY)
+    }
+
     func testOverlayUsesDisplayContainingDockItems() {
         let internalDisplay = DisplaySnapshot(
             id: 1,

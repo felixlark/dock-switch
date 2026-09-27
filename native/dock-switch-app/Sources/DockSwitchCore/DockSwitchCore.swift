@@ -803,20 +803,32 @@ public final class OverlayLayoutService {
         let centerY = round((minY + maxY) / 2)
         let targetDisplay = displayForDockOverlay(x: x, y: centerY, displays: displays)
         let displayBounds = targetDisplay?.bounds
-        let displayOriginYForDockItems = displayBounds.map { min(0, $0.y) } ?? 0
-        let localDockCenterY = centerY - displayOriginYForDockItems
+        let dockItemsOriginY = displayBounds.map {
+            dockCoordinateOriginY(centerY: centerY, displayBounds: $0)
+        } ?? 0
+        let localDockCenterY = centerY - dockItemsOriginY
         let displayMidY = displayBounds.map { floor($0.height / 2) } ?? centerY
         let isBottomDock = localDockCenterY >= displayMidY
-        let unclampedY = isBottomDock ? minY - overlayHeight - gap : maxY + 52.0 + gap
-        let screenY: Double
-        if let displayBounds {
-            let minScreenY = displayBounds.y < 0 ? displayBounds.y : 0
-            let maxScreenY = minScreenY + displayBounds.height - overlayHeight
-            screenY = clamp(unclampedY, minScreenY, maxScreenY)
+        let localMinY = minY - dockItemsOriginY
+        let localMaxY = maxY - dockItemsOriginY
+        let localDockRectMinY = dockRect.minY - dockItemsOriginY
+        let unclampedLocalY: Double
+        if isBottomDock {
+            let workAreaMaxY = targetDisplay.map { $0.workArea.maxY - $0.bounds.y }
+            let safeDockTop = [localMinY, localDockRectMinY, workAreaMaxY]
+                .compactMap { $0 }
+                .min() ?? localMinY
+            unclampedLocalY = safeDockTop - overlayHeight - gap
         } else {
-            screenY = unclampedY
+            unclampedLocalY = localMaxY + 52.0 + gap
         }
-        let y = screenY + (displayBounds.map { max(0, $0.y) } ?? 0)
+        let localWindowY: Double
+        if let displayBounds {
+            localWindowY = clamp(unclampedLocalY, 0, displayBounds.height - overlayHeight)
+        } else {
+            localWindowY = unclampedLocalY
+        }
+        let y = localWindowY + (displayBounds?.y ?? 0)
         let window = DSRect(x: x, y: y, width: width, height: overlayHeight)
 
         let targets = launcherItems.map { item -> OverlayTarget in
@@ -831,6 +843,23 @@ public final class OverlayLayoutService {
             return OverlayTarget(item: item, frame: frame)
         }
         return OverlayLayout(windowFrameAX: window, dockRect: dockRect, targets: targets)
+    }
+
+    private func dockCoordinateOriginY(centerY: Double, displayBounds: DSRect) -> Double {
+        let localY = centerY
+        let globalY = centerY - displayBounds.y
+        let localDistance = distanceToNearestVerticalEdge(localY, height: displayBounds.height)
+        let globalDistance = distanceToNearestVerticalEdge(globalY, height: displayBounds.height)
+
+        if globalDistance < localDistance {
+            return displayBounds.y
+        }
+        return 0
+    }
+
+    private func distanceToNearestVerticalEdge(_ y: Double, height: Double) -> Double {
+        guard y >= 0, y <= height else { return .infinity }
+        return min(y, height - y)
     }
 
     private func displayForDockOverlay(x: Double, y: Double, displays: [DisplaySnapshot]) -> DisplaySnapshot? {

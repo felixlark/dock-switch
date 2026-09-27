@@ -1,14 +1,15 @@
-# Dependencies
-node_modules/
+# Dependencies (no trailing slash: these may be symlinks to ~/Local)
+node_modules
 
-# Build and packaging outputs
-dist/
+# Build and packaging outputs (no trailing slash: these may be symlinks to ~/Local)
+/build
+dist
 output/
 release/
 bin/
-native/dock-query/build/
+native/dock-query/build
 native/dock-switch-app/.build/
-native/settings-app/build/
+native/settings-app/build
 artifacts/
 
 # Documentation build artifacts

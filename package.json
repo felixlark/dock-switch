@@ -31,9 +31,12 @@
     "build": {
         "asar": false,
         "appId": "me.longbiaochen.dock-switch",
+        "directories": {
+            "buildResources": "resources"
+        },
         "mac": {
             "category": "macos.utility",
-            "icon": "build/icon@2x.icns",
+            "icon": "resources/icon@2x.icns",
             "extendInfo": {
                 "LSUIElement": true,
                 "NSAppleEventsUsageDescription": "dock-switch needs automation permission to focus and place application windows."
@@ -41,8 +44,8 @@
             "identity": "Apple Development: LONGBIAO CHEN (YRQ5DV25KM)",
             "hardenedRuntime": true,
             "timestamp": "none",
-        "entitlements": "build/entitlements.mac.plist",
-        "entitlementsInherit": "build/entitlements.mac.plist",
+        "entitlements": "resources/entitlements.mac.plist",
+        "entitlementsInherit": "resources/entitlements.mac.plist",
             "target": "dir"
         },
         "extraResources": [{

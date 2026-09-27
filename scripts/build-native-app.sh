@@ -8,7 +8,7 @@ CONTENTS_DIR="$APP_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
 RESOURCES_DIR="$CONTENTS_DIR/Resources"
 APP_RESOURCES_DIR="$RESOURCES_DIR/app"
-ENTITLEMENTS="$ROOT_DIR/build/entitlements.mac.plist"
+ENTITLEMENTS="$ROOT_DIR/resources/entitlements.mac.plist"
 DEFAULT_IDENTITY="Developer ID Application: LONGBIAO CHEN (HJG65XBC25)"
 IDENTITY="${CSC_NAME:-$DEFAULT_IDENTITY}"
 
@@ -29,8 +29,8 @@ if [[ -d "$ROOT_DIR/native/settings-app/build/DockSwitchSettings.app" ]]; then
   cp -R "$ROOT_DIR/native/settings-app/build/DockSwitchSettings.app" "$RESOURCES_DIR/DockSwitchSettings.app"
 fi
 
-if [[ -f "$ROOT_DIR/build/icon@2x.icns" ]]; then
-  cp "$ROOT_DIR/build/icon@2x.icns" "$RESOURCES_DIR/icon.icns"
+if [[ -f "$ROOT_DIR/resources/icon@2x.icns" ]]; then
+  cp "$ROOT_DIR/resources/icon@2x.icns" "$RESOURCES_DIR/icon.icns"
 fi
 
 cat > "$CONTENTS_DIR/Info.plist" <<'PLIST'

@@ -30,6 +30,7 @@ often expose menu bar state, Dock contents, account badges, and workspace detail
   - `→` right side display
   - `↑` external display
   - `↓` internal display
+- Device Hub compact phone windows retain their physical size and center on the selected display or half; expand with “Show in Device Hub” for a resizable window.
 - Press `【` to tile the frontmost window to the left half of its current display.
 - Press `】` to tile the frontmost window to the right half of its current display.
 - Press `F6` to open `ChatGPT` directly on the right side display, maximized to the display work area.
@@ -189,3 +190,5 @@ App key/display mapping is stored in `src/config.json` under `dock_items`.
 - Renderer/UI logic: `src/index.js`
 - Dock metadata provider: native Node addon (`native/dock-query`)
 - Canonical automation entrypoint: `bin/dock-switch-cli.js`
+
+Native build output is stored under `~/Local/dock-switch/build/`, with Swift caches under `~/Library/Caches/dock-switch/`. Set `DOCK_SWITCH_BUILD_ROOT` to override the package output location.

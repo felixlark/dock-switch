@@ -2,7 +2,9 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-APP_DIR="$ROOT_DIR/native/settings-app/build/DockSwitchSettings.app"
+BUILD_ROOT="${DOCK_SWITCH_BUILD_ROOT:-$HOME/Local/dock-switch/build}"
+MODULE_CACHE="${DOCK_SWITCH_MODULE_CACHE:-$HOME/Library/Caches/dock-switch/settings-modules}"
+APP_DIR="$BUILD_ROOT/settings/DockSwitchSettings.app"
 CONTENTS_DIR="$APP_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
 SOURCE_DIR="$ROOT_DIR/native/settings-app/Sources"
@@ -10,9 +12,10 @@ DEFAULT_IDENTITY="Developer ID Application: LONGBIAO CHEN (HJG65XBC25)"
 IDENTITY="${CSC_NAME:-$DEFAULT_IDENTITY}"
 
 rm -rf "$APP_DIR"
-mkdir -p "$MACOS_DIR"
+mkdir -p "$MACOS_DIR" "$MODULE_CACHE"
 
 swiftc \
+  -module-cache-path "$MODULE_CACHE" \
   -parse-as-library \
   -O \
   -framework SwiftUI \

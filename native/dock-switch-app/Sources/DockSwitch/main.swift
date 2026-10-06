@@ -457,7 +457,7 @@ final class DockSwitchApp: NSObject, NSApplicationDelegate {
               LauncherRules.normalizeAppName(app.localizedName ?? "") != "dock-switch" else {
             return previousWindowOwnerPID
         }
-        return app.processIdentifier
+        return ApplicationProcessIdentity.resolvedPID(for: app)
     }
 
     private func appKitFrame(fromAX rect: DSRect) -> NSRect {

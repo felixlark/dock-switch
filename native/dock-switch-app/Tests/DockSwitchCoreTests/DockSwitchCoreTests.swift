@@ -3,6 +3,27 @@ import XCTest
 @testable import DockSwitchCore
 
 final class DockSwitchCoreTests: XCTestCase {
+    func testApplicationIdentityRecoversInvalidPIDByExactExecutable() {
+        let path = "/Applications/Xcode.app/Contents/Applications/DeviceHub.app/Contents/MacOS/DeviceHub"
+        XCTAssertEqual(ApplicationProcessIdentity.selectPID(reportedPID: -1, executablePath: path, candidates: [
+            (99, "/tmp/DeviceHub"), (39807, path)
+        ]), 39807)
+        XCTAssertNil(ApplicationProcessIdentity.selectPID(reportedPID: -1, executablePath: path, candidates: [(99, "/tmp/DeviceHub")]))
+        XCTAssertNil(ApplicationProcessIdentity.selectPID(reportedPID: -1, executablePath: nil, candidates: [(39807, path)]))
+        XCTAssertEqual(ApplicationProcessIdentity.selectPID(reportedPID: 10, executablePath: path, candidates: [(39807, path)]), 10)
+    }
+
+    func testCompactDeviceWindowKeepsPhysicalSizeAndCentersOnTarget() {
+        let current = DSRect(x: 100, y: 200, width: 282, height: 635)
+        let requested = DSRect(x: 2560, y: -276, width: 1152, height: 2018)
+        XCTAssertEqual(WindowMovementRules.targetBounds(requested: requested, current: current, fixedSize: true),
+                       DSRect(x: 2995, y: 415.5, width: 282, height: 635))
+        XCTAssertEqual(WindowMovementRules.targetBounds(requested: requested, current: current, fixedSize: false), requested)
+        let small = DSRect(x: 0, y: 30, width: 200, height: 400)
+        XCTAssertEqual(WindowMovementRules.targetBounds(requested: small, current: current, fixedSize: true),
+                       DSRect(x: 0, y: 30, width: 282, height: 635))
+    }
+
     private final class FakeLauncherWindowPlacement: LauncherWindowPlacement {
         var placeProcessResult = WindowActionResult(ok: false)
         var moveMouseResult = WindowActionResult(ok: false)

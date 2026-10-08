@@ -67,12 +67,6 @@ function buildDockSwitchKarabinerRule() {
         manipulators: [
             {
                 type: "basic",
-                from: { key_code: "right_command", modifiers: { optional: ["any"] } },
-                to: [{ key_code: "right_command", lazy: true }],
-                to_if_alone: [{ key_code: "f20" }]
-            },
-            {
-                type: "basic",
                 from: fromKeyCode("f3"),
                 to: [{ shell_command: SMARTSHADOW_DIRECT_COMMAND }]
             },
@@ -109,7 +103,7 @@ function buildDockSwitchKarabinerRule() {
 function manipulatorMatchesManagedDirectKey(manipulator) {
     const from = manipulator && manipulator.from;
     if (!from || typeof from !== "object") return false;
-    if (["f3", "f6", "left_shift", "right_shift", "caps_lock", "right_command"].includes(from.key_code)) return true;
+    if (["f3", "f6", "left_shift", "right_shift"].includes(from.key_code)) return true;
     if (from.key_code === "f5" && Array.isArray(from.modifiers && from.modifiers.mandatory) && from.modifiers.mandatory.includes("fn")) return true;
     if (from.consumer_key_code === "mission_control") return true;
     if (from.apple_vendor_keyboard_key_code === "mission_control") return true;
@@ -230,13 +224,6 @@ function applyDockSwitchKarabinerProfile(profile) {
 
     const before = stableJsonString(profile);
     removeManagedSimpleEntries(profile);
-    for (const device of profile.devices || []) {
-        if (device && Array.isArray(device.simple_modifications)) {
-            device.simple_modifications = device.simple_modifications.filter(entry =>
-                !["caps_lock", "right_command"].includes(entry && entry.from && entry.from.key_code)
-            );
-        }
-    }
     ensureManagedFunctionKeys(profile);
     ensureLogitechTopRowConsumerDevice(profile);
     const rules = normalizeRules(profile);

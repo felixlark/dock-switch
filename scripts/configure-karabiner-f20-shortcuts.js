@@ -13,8 +13,6 @@ function usage() {
         "",
         "Installs the dock-switch launcher shortcut rule into the selected Karabiner profile.",
         "F3 opens SmartShadow directly; F6 opens ChatGPT directly.",
-        "Right Command alone sends F20 for the HUD; Command chords stay functional.",
-        "Caps Lock is restored to the system input-source behavior.",
         "Legacy left_shift/right_shift launcher mappings are removed so Shift returns to the default behavior.",
         "The rule removes conflicting legacy mappings first."
     ].join("\n");

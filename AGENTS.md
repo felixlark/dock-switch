@@ -21,7 +21,7 @@
 | --- | --- | --- | --- |
 | Verify display labels before placement work | `node bin/dock-switch-cli.js displays` | Display labels and bounds are current | Re-map display-target logic from live labels before editing config |
 | Change launcher/window behavior | `node --test test/<name>.test.js` then `yarn dist` | Tests pass and `/Applications/dock-switch.app` is replaced by the new build | Reinstall previous app bundle from backup or revert only the touched source files |
-| Refresh Karabiner single-key launcher mapping | `yarn karabiner:f20` then `yarn karabiner:f20:check` | F3 opens SmartShadow directly; F6 opens ChatGPT directly; legacy left/right Shift mappings are removed so Shift stays default | Inspect `/Users/longbiao/.config/karabiner/karabiner.json` with `jq empty` and rerun the script |
+| Refresh Karabiner single-key launcher mapping | `yarn karabiner:f20` then `yarn karabiner:f20:check` | Right Command alone toggles the HUD via F20, preserving Command chords; Caps Lock passes through for system input-source switching; F3/F6 remain direct app shortcuts and Shift stays default | Inspect `/Users/longbiao/.config/karabiner/karabiner.json` with `jq empty` and rerun the script |
 | Place Computer Use browser beside Codex | `node scripts/place-computer-use-browser.js` | `Google Chrome` moves to the right half of the focused Codex display | Focus the intended Codex window and rerun; if stale, reset the Computer Use binding |
 
 ## Troubleshooting

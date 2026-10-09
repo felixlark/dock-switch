@@ -505,7 +505,16 @@ public enum LauncherRules {
         }
         normalized = normalized.lowercased()
         if normalized == "chrome" { return "google chrome" }
+        if ["feishu", "lark", "飞书"].contains(normalized) { return "feishu" }
         return normalized
+    }
+
+    /// Match the main application, never a similarly named Electron helper.
+    public static func matchesApplication(name: String, localizedName: String, bundleIdentifier: String?) -> Bool {
+        if normalizeAppName(name) == "feishu", bundleIdentifier == "com.electron.lark" {
+            return true
+        }
+        return normalizeAppName(name) == normalizeAppName(localizedName)
     }
 
     public static func normalizeKey(_ value: String) -> String {
@@ -1027,6 +1036,18 @@ public final class LauncherService {
             let expanded = WebAppRuntime.resolveOpenPath(raw)
             NSWorkspace.shared.open(URL(fileURLWithPath: expanded))
             return
+        }
+        if LauncherRules.normalizeAppName(item.name) == "feishu" {
+            if let app = NSWorkspace.shared.runningApplications.first(where: {
+                LauncherRules.matchesApplication(name: item.name, localizedName: $0.localizedName ?? "", bundleIdentifier: $0.bundleIdentifier)
+            }) {
+                app.activate(options: [.activateIgnoringOtherApps])
+                return
+            }
+            if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.electron.lark") {
+                NSWorkspace.shared.open(url)
+                return
+            }
         }
         NSWorkspace.shared.launchApplication(item.name)
     }
@@ -2356,9 +2377,8 @@ public enum WindowMovementRules {
 }
 
 private func copyApplication(named name: String) -> AXUIElement? {
-    let normalized = LauncherRules.normalizeAppName(name)
     guard let app = NSWorkspace.shared.runningApplications.first(where: {
-        LauncherRules.normalizeAppName($0.localizedName ?? "") == normalized
+        LauncherRules.matchesApplication(name: name, localizedName: $0.localizedName ?? "", bundleIdentifier: $0.bundleIdentifier)
     }), let pid = ApplicationProcessIdentity.resolvedPID(for: app) else { return nil }
     return AXUIElementCreateApplication(pid)
 }

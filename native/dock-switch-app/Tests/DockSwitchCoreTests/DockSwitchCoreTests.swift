@@ -3,6 +3,33 @@ import XCTest
 @testable import DockSwitchCore
 
 final class DockSwitchCoreTests: XCTestCase {
+    func testFeishuLocalizedDockNamesKeepFShortcutAndPlacement() {
+        let config = LauncherConfig(dockItems: [
+            LauncherConfigItem(name: "Feishu", key: "F", screen: "1", kind: nil, placement: "internal_fill", openPath: nil, appURL: nil)
+        ])
+        for name in ["Feishu", "飞书", "Lark", " LARK.app "] {
+            let dockItem = DockItemSnapshot(name: name, pos: CGPoint(x: 10, y: 0), size: CGSize(width: 50, height: 66))
+            let items = LauncherRules.buildLauncherItems(dockItems: [dockItem], config: config)
+            XCTAssertEqual(items.first?.key, "F")
+            XCTAssertEqual(items.first?.name, "Feishu")
+            XCTAssertEqual(items.first?.placement, "internal_fill")
+            XCTAssertEqual(items.first?.dockItem.name, name)
+        }
+    }
+
+    func testFeishuMainApplicationIdentityAndHelperExclusion() {
+        for requested in ["Feishu", "飞书", "Lark"] {
+            for localized in ["Feishu", "飞书", "Lark"] {
+                XCTAssertTrue(LauncherRules.matchesApplication(name: requested, localizedName: localized, bundleIdentifier: "com.electron.lark"))
+                XCTAssertTrue(LauncherRules.matchesApplication(name: requested, localizedName: localized, bundleIdentifier: nil))
+            }
+            XCTAssertTrue(LauncherRules.matchesApplication(name: requested, localizedName: "Different display label", bundleIdentifier: "com.electron.lark"))
+            XCTAssertFalse(LauncherRules.matchesApplication(name: requested, localizedName: "Feishu Helper (Renderer)", bundleIdentifier: "com.electron.lark.helper"))
+            XCTAssertFalse(LauncherRules.matchesApplication(name: requested, localizedName: "Lark Helper", bundleIdentifier: "com.electron.lark.helper"))
+        }
+        XCTAssertFalse(LauncherRules.matchesApplication(name: "Finder", localizedName: "Feishu", bundleIdentifier: "com.electron.lark"))
+    }
+
     func testApplicationIdentityRecoversInvalidPIDByExactExecutable() {
         let path = "/Applications/Xcode.app/Contents/Applications/DeviceHub.app/Contents/MacOS/DeviceHub"
         XCTAssertEqual(ApplicationProcessIdentity.selectPID(reportedPID: -1, executablePath: path, candidates: [

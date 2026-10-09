@@ -9,6 +9,9 @@ function normalizeAppName(name) {
     if (normalized === "chrome") {
         return "google chrome";
     }
+    if (["feishu", "lark", "飞书"].includes(normalized)) {
+        return "feishu";
+    }
 
     return normalized;
 }

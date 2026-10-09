@@ -5,6 +5,7 @@ const {
     getInternalDisplay,
     resolveDisplayCenterPoint
 } = require("./display-targets");
+const { normalizeAppName } = require("./launcher-items");
 
 var APPLICATION_RUNTIME_NAME_ALIASES = Object.freeze({
     "微信": ["WeChat"]
@@ -14,7 +15,9 @@ function applicationRuntimeNameCandidates(processName) {
     var name = String(processName || "");
     if (!name) return [];
     var candidates = [name];
-    var aliases = APPLICATION_RUNTIME_NAME_ALIASES[name] || [];
+    var aliases = normalizeAppName(name) === "feishu"
+        ? ["Feishu", "飞书", "Lark"]
+        : APPLICATION_RUNTIME_NAME_ALIASES[name] || [];
     for (var i = 0; i < aliases.length; i++) {
         if (aliases[i] && !candidates.includes(aliases[i])) {
             candidates.push(aliases[i]);

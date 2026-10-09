@@ -16,6 +16,27 @@ const {
     resolveBoundsForPlacement
 } = require("../src/window-control");
 
+test("Feishu placement and mouse centering resolve localized runtime names", () => {
+    for (const requested of ["Feishu", "飞书", "Lark"]) {
+        for (const runtime of ["Feishu", "飞书", "Lark"]) {
+            const moves = [];
+            const dockQuery = {
+                getApplicationWindowBounds: ({ name }) => name === runtime ? { x: 0, y: 0, w: 800, h: 600 } : null,
+                moveApplicationWindow: payload => {
+                    moves.push(payload);
+                    return payload.name === runtime;
+                },
+                moveMouse: () => true
+            };
+            const display = makeDisplay({ id: 1, internal: true, x: 0, y: 0, width: 1512, height: 982 });
+            const screen = { getAllDisplays: () => [display], getPrimaryDisplay: () => display };
+            assert.equal(placeProcessWindowByPlacement(requested, dockQuery, screen, "internal_fill"), true);
+            assert.equal(moves.at(-1).name, runtime);
+            assert.equal(moveMouseToApplicationWindowCenter(requested, dockQuery), true);
+        }
+    }
+});
+
 function makeDisplay({ id, label, internal, x, y, width, height, workArea }) {
     return {
         id,

@@ -45,7 +45,7 @@ cat > "$CONTENTS_DIR/Info.plist" <<'PLIST'
         <string>MacOSX</string>
     </array>
     <key>CFBundleShortVersionString</key>
-    <string>1.0.3</string>
+    <string>1.0.1</string>
     <key>CFBundleVersion</key>
     <string>1</string>
     <key>DTCompiler</key>

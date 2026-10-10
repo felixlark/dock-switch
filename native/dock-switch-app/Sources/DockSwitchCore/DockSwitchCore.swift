@@ -1032,48 +1032,7 @@ public final class LauncherService {
     }
 
     private static func open(_ item: LauncherItem) {
-        if let raw = item.openPath, !raw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            let expanded = WebAppRuntime.resolveOpenPath(raw)
-            NSWorkspace.shared.open(URL(fileURLWithPath: expanded))
-            return
-        }
-        if LauncherRules.normalizeAppName(item.name) == "feishu" {
-            if let app = NSWorkspace.shared.runningApplications.first(where: {
-                LauncherRules.matchesApplication(name: item.name, localizedName: $0.localizedName ?? "", bundleIdentifier: $0.bundleIdentifier)
-            }) {
-                // Since macOS 14, ignoringOtherApps has no effect. The HUD
-                // owns activation, so explicitly hand it to the selected app.
-                let accepted: Bool
-                if #available(macOS 14.0, *) {
-                    NSApplication.shared.yieldActivation(to: app)
-                    accepted = app.activate(from: .current, options: [])
-                } else {
-                    accepted = app.activate(options: [.activateIgnoringOtherApps])
-                }
-                NSLog("dock-switch: Feishu activation pid=\(app.processIdentifier) accepted=\(accepted)")
-                if accepted {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                        NSLog("dock-switch: Feishu activation observed active=\(app.isActive) frontmost=\(NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? "nil")")
-                    }
-                }
-                // Activation alone does not reopen a window after the user
-                // closed it. Always send the normal application-open request
-                // to the existing instance as well.
-            }
-            if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.electron.lark") {
-                if #available(macOS 14.0, *) {
-                    NSApplication.shared.yieldActivation(toApplicationWithBundleIdentifier: "com.electron.lark")
-                }
-                let configuration = NSWorkspace.OpenConfiguration()
-                configuration.activates = true
-                configuration.createsNewApplicationInstance = false
-                NSWorkspace.shared.openApplication(at: url, configuration: configuration) { app, error in
-                    NSLog("dock-switch: Feishu open pid=\(app?.processIdentifier ?? -1) error=\(error?.localizedDescription ?? "none")")
-                }
-                return
-            }
-        }
-        NSWorkspace.shared.launchApplication(item.name)
+        ApplicationLauncher().open(name: item.name, openPath: item.openPath)
     }
 
     private func retryPlace(item: LauncherItem, placement: String, until deadline: Date) {
@@ -2262,7 +2221,9 @@ public final class ControlServer {
                   let placement = command["placement"] as? String else {
                 return ["ok": false, "error": "appName and placement are required"]
             }
-            NSWorkspace.shared.launchApplication(appName)
+            guard ApplicationLauncher().open(name: appName) else {
+                return ["ok": false, "error": "Application not found: \(appName)"]
+            }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
                 _ = self.showFeedbackIfSuccessful(self.windowPlacement.placeProcess(name: appName, placement: placement))
             }

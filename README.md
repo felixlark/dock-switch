@@ -192,3 +192,7 @@ App key/display mapping is stored in `src/config.json` under `dock_items`.
 - Canonical automation entrypoint: `bin/dock-switch-cli.js`
 
 Native build output is stored under `~/Local/dock-switch/build/`, with Swift caches under `~/Library/Caches/dock-switch/`. Set `DOCK_SWITCH_BUILD_ROOT` to override the package output location.
+
+### Preserving local launcher settings during a rebuild
+
+Set `DOCK_SWITCH_CONFIG_SOURCE` to an existing config JSON when running `yarn dist` to package that configuration before signing. This preserves local key/placement overrides without editing the sealed installed bundle after installation. Feishu activation also sends a normal application-open request to the existing instance, so closing its main window does not prevent the launcher from reopening it.

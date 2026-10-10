@@ -312,6 +312,7 @@ final class DockSwitchApp: NSObject, NSApplicationDelegate {
     }
 
     private func activate(_ item: LauncherItem) {
+        NSLog("dock-switch: HUD selected name=\(item.name) key=\(item.key)")
         hideLauncher()
         launcherService.activate(item)
     }
@@ -698,7 +699,10 @@ struct LauncherOverlayView: View {
                         .strokeBorder(.white.opacity(0.24), lineWidth: 1)
                 }
             ForEach(targets) { target in
-                Text(target.item.displayKey)
+                Button {
+                    onSelect(target.item)
+                } label: {
+                    Text(target.item.displayKey)
                     .font(.system(size: target.item.displayKey.count > 1 ? 18 : 21, weight: .black, design: .rounded))
                     .foregroundStyle(.white)
                     .frame(width: target.frame.width, height: target.frame.height)
@@ -712,15 +716,14 @@ struct LauncherOverlayView: View {
                     }
                     .shadow(color: .black.opacity(0.28), radius: 8, y: 4)
                     .contentShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
-                    .onTapGesture {
-                        onSelect(target.item)
-                    }
+                }
+                .buttonStyle(.plain)
                 .position(x: target.frame.x + target.frame.width / 2, y: target.frame.y + target.frame.height / 2)
                 .onHover { hovering in
                     focusedItem = hovering ? target.item : focusedItem
                 }
                 .accessibilityLabel(Text(target.item.name))
-                .accessibilityAddTraits(.isButton)
+
             }
             if let item = focusedItem {
                 HStack(spacing: 7) {

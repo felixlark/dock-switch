@@ -82,6 +82,6 @@ private final class RecordingApplicationWorkspace: LauncherApplicationWorkspace 
     func applicationURL(bundleIdentifier: String) -> URL? { bundleURLs[bundleIdentifier] }
     func applicationURL(name: String) -> URL? { namedURLs[name] }
     func prepareActivation(at url: URL) { events.append(.activate(url)) }
-    func openApplication(at url: URL) { events.append(.openApplication(url)) }
-    func openResource(at url: URL) { events.append(.openResource(url)) }
+    func openApplication(at url: URL, completion: @escaping (Bool) -> Void) { events.append(.openApplication(url)); completion(true) }
+    func openResource(at url: URL) -> Bool { events.append(.openResource(url)); return true }
 }

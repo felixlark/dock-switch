@@ -13,8 +13,8 @@ protocol LauncherApplicationWorkspace {
     func applicationURL(bundleIdentifier: String) -> URL?
     func applicationURL(name: String) -> URL?
     func prepareActivation(at url: URL)
-    func openApplication(at url: URL)
-    func openResource(at url: URL)
+    func openApplication(at url: URL, completion: @escaping (Bool) -> Void)
+    func openResource(at url: URL) -> Bool
 }
 
 struct ApplicationLauncher {
@@ -22,13 +22,14 @@ struct ApplicationLauncher {
     var resolveOpenPath: (String) -> String = WebAppRuntime.resolveOpenPath
 
     @discardableResult
-    func open(name: String, openPath: String? = nil) -> Bool {
+    func open(name: String, openPath: String? = nil, completion: @escaping (Bool) -> Void = { _ in }) -> Bool {
         let url: URL
         if let path = openPath, !path.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             url = URL(fileURLWithPath: resolveOpenPath(path))
             if url.pathExtension.lowercased() != "app" {
-                workspace.openResource(at: url)
-                return true
+                let opened = workspace.openResource(at: url)
+                completion(opened)
+                return opened
             }
         } else {
             let canonicalURL = LauncherRules.normalizeAppName(name) == "feishu"
@@ -39,6 +40,7 @@ struct ApplicationLauncher {
             }?.bundleURL
             guard let resolved = canonicalURL ?? runningURL ?? workspace.applicationURL(name: name) else {
                 NSLog("dock-switch: application not found name=%@", name)
+                completion(false)
                 return false
             }
             url = resolved
@@ -47,7 +49,7 @@ struct ApplicationLauncher {
         workspace.prepareActivation(at: url)
         // Always send the normal open/reopen request, including when activation
         // succeeds: a running process may have no visible windows.
-        workspace.openApplication(at: url)
+        workspace.openApplication(at: url, completion: completion)
         return true
     }
 }
@@ -95,18 +97,19 @@ private struct SystemLauncherApplicationWorkspace: LauncherApplicationWorkspace 
         }
     }
 
-    func openApplication(at url: URL) {
+    func openApplication(at url: URL, completion: @escaping (Bool) -> Void) {
         let configuration = NSWorkspace.OpenConfiguration()
         configuration.activates = true
         configuration.createsNewApplicationInstance = false
         NSWorkspace.shared.openApplication(at: url, configuration: configuration) { app, error in
             NSLog("dock-switch: open app=%@ pid=%d error=%@", url.lastPathComponent, app?.processIdentifier ?? -1, error?.localizedDescription ?? "none")
+            completion(error == nil && app != nil)
         }
     }
 
-    func openResource(at url: URL) {
-        if !NSWorkspace.shared.open(url) {
-            NSLog("dock-switch: open resource failed path=%@", url.path)
-        }
+    func openResource(at url: URL) -> Bool {
+        let opened = NSWorkspace.shared.open(url)
+        if !opened { NSLog("dock-switch: open resource failed path=%@", url.path) }
+        return opened
     }
 }

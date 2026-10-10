@@ -992,14 +992,14 @@ public final class LauncherService {
     private let placeRetryDeadline: TimeInterval
     private let placeRetryDelay: TimeInterval
     private let showMouseFeedback: (CGPoint) -> Void
-    private let openItem: (LauncherItem) -> Void
+    private let openItem: (LauncherItem, @escaping (Bool) -> Void) -> Bool
 
     public init(
         windowPlacement: any LauncherWindowPlacement = WindowPlacementService(),
         placeRetryDeadline: TimeInterval = 1.6,
         placeRetryDelay: TimeInterval = 0.08,
         showMouseFeedback: @escaping (CGPoint) -> Void = { _ in },
-        openItem: ((LauncherItem) -> Void)? = nil
+        openItem: ((LauncherItem, @escaping (Bool) -> Void) -> Bool)? = nil
     ) {
         self.windowPlacement = windowPlacement
         self.placeRetryDeadline = placeRetryDeadline
@@ -1008,13 +1008,22 @@ public final class LauncherService {
         self.openItem = openItem ?? Self.open
     }
 
-    public func activate(_ item: LauncherItem) {
-        let placement = item.placement ?? (item.kind == "web_app" ? "internal_fill" : nil)
-        openItem(item)
-        if let placement {
-            retryPlace(item: item, placement: placement, until: Date().addingTimeInterval(placeRetryDeadline))
-        } else {
-            retryMoveMouseToApplicationWindowCenter(appName: item.name, until: Date().addingTimeInterval(placeRetryDeadline))
+    @discardableResult
+    public func activate(_ item: LauncherItem) -> Bool {
+        if !Thread.isMainThread {
+            return DispatchQueue.main.sync { self.activate(item) }
+        }
+        return openItem(item) { [weak self] opened in
+            guard opened else { return }
+            DispatchQueue.main.async {
+                guard let self else { return }
+                let placement = item.placement ?? (item.kind == "web_app" ? "internal_fill" : nil)
+                if let placement {
+                    self.retryPlace(item: item, placement: placement, until: Date().addingTimeInterval(self.placeRetryDeadline))
+                } else {
+                    self.retryMoveMouseToApplicationWindowCenter(appName: item.name, until: Date().addingTimeInterval(self.placeRetryDeadline))
+                }
+            }
         }
     }
 
@@ -1031,8 +1040,8 @@ public final class LauncherService {
         activate(item)
     }
 
-    private static func open(_ item: LauncherItem) {
-        ApplicationLauncher().open(name: item.name, openPath: item.openPath)
+    private static func open(_ item: LauncherItem, completion: @escaping (Bool) -> Void) -> Bool {
+        ApplicationLauncher().open(name: item.name, openPath: item.openPath, completion: completion)
     }
 
     private func retryPlace(item: LauncherItem, placement: String, until deadline: Date) {
@@ -2110,6 +2119,7 @@ public final class ControlServer {
     private let showMouseFeedback: (CGPoint) -> Void
     private let getGokit5Status: () -> [String: Any]
     private let selectCodexDisplay: ([String: Any]) -> [String: Any]
+    private let launcherService: LauncherService
 
     public init(
         displayService: DisplayService,
@@ -2127,6 +2137,7 @@ public final class ControlServer {
         self.showMouseFeedback = showMouseFeedback
         self.getGokit5Status = getGokit5Status
         self.selectCodexDisplay = selectCodexDisplay
+        self.launcherService = LauncherService(windowPlacement: windowPlacement, showMouseFeedback: showMouseFeedback)
     }
 
     deinit {
@@ -2221,11 +2232,9 @@ public final class ControlServer {
                   let placement = command["placement"] as? String else {
                 return ["ok": false, "error": "appName and placement are required"]
             }
-            guard ApplicationLauncher().open(name: appName) else {
+            let item = LauncherItem(name: appName, key: "", placement: placement, dockItem: DockItemSnapshot(name: appName, pos: .zero, size: .zero))
+            guard launcherService.activate(item) else {
                 return ["ok": false, "error": "Application not found: \(appName)"]
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
-                _ = self.showFeedbackIfSuccessful(self.windowPlacement.placeProcess(name: appName, placement: placement))
             }
             return ["ok": true]
         case "place-pid":

@@ -462,7 +462,7 @@ final class DockSwitchCoreTests: XCTestCase {
                 feedbackPoints.append(point)
                 expectation.fulfill()
             },
-            openItem: { _ in }
+            openItem: { _, completion in completion(true); return true }
         )
 
         service.activate(LauncherItem(
@@ -492,7 +492,7 @@ final class DockSwitchCoreTests: XCTestCase {
                 feedbackPoints.append(point)
                 expectation.fulfill()
             },
-            openItem: { _ in }
+            openItem: { _, completion in completion(true); return true }
         )
 
         service.activate(LauncherItem(
@@ -505,6 +505,36 @@ final class DockSwitchCoreTests: XCTestCase {
         XCTAssertEqual(placement.placedProcesses.count, 0)
         XCTAssertEqual(placement.movedApps, ["Finder"])
         XCTAssertEqual(feedbackPoints, [CGPoint(x: -100, y: 50)])
+    }
+
+    func testLauncherPlacementWaitsForSuccessfulOpenCompletion() {
+        let placement = FakeLauncherWindowPlacement()
+        placement.placeProcessResult = WindowActionResult(ok: true, feedbackPoint: .zero)
+        var completeOpen: ((Bool) -> Void)?
+        let placed = expectation(description: "placed after opening")
+        let service = LauncherService(
+            windowPlacement: placement, placeRetryDeadline: 0.1, placeRetryDelay: 0,
+            showMouseFeedback: { _ in placed.fulfill() },
+            openItem: { _, completion in completeOpen = completion; return true }
+        )
+        XCTAssertTrue(service.activate(LauncherItem(name: "Calendar", key: "C", placement: "internal_fill", dockItem: DockItemSnapshot(name: "Calendar", pos: .zero, size: .zero))))
+        RunLoop.current.run(until: Date().addingTimeInterval(0.03))
+        XCTAssertTrue(placement.placedProcesses.isEmpty)
+        completeOpen?(true)
+        wait(for: [placed], timeout: 1)
+        XCTAssertEqual(placement.placedProcesses.map(\.name), ["Calendar"])
+    }
+
+    func testFailedOpenDoesNotPlaceOrMovePointer() {
+        let placement = FakeLauncherWindowPlacement()
+        let service = LauncherService(
+            windowPlacement: placement, placeRetryDeadline: 0, placeRetryDelay: 0,
+            openItem: { _, completion in completion(false); return true }
+        )
+        service.activate(LauncherItem(name: "Calendar", key: "C", placement: "internal_fill", dockItem: DockItemSnapshot(name: "Calendar", pos: .zero, size: .zero)))
+        RunLoop.current.run(until: Date().addingTimeInterval(0.03))
+        XCTAssertTrue(placement.placedProcesses.isEmpty)
+        XCTAssertTrue(placement.movedApps.isEmpty)
     }
 
     func testOverlayAnimationPolicyShowsInstantlyAndHidesSwiftly() {

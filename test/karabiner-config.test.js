@@ -6,6 +6,7 @@ const {
     CHATGPT_DIRECT_COMMAND,
     LOGITECH_TOP_ROW_CONSUMER_DEVICE,
     SMARTSHADOW_DIRECT_COMMAND,
+    applyDockSwitchKarabinerConfig,
     applyDockSwitchKarabinerProfile,
     buildDockSwitchKarabinerRule
 } = require("../src/karabiner-config");
@@ -124,9 +125,7 @@ test("applyDockSwitchKarabinerProfile keeps F3 and F6 direct while removing Shif
         profile.complex_modifications.rules.find(rule => rule.description === "Longbiao's Tweaks").manipulators.map(manipulator => manipulator.from.key_code),
         ["d", "f5"]
     );
-    assert.deepEqual(profile.simple_modifications, [
-        { from: { key_code: "caps_lock" }, to: [{ key_code: "f20" }] }
-    ]);
+    assert.deepEqual(profile.simple_modifications, []);
     assert.deepEqual(profile.fn_function_keys, [
         { from: { key_code: "f3" }, to: [{ shell_command: SMARTSHADOW_DIRECT_COMMAND }] },
         { from: { key_code: "f5" }, to: [{ key_code: "f5" }] },
@@ -136,7 +135,7 @@ test("applyDockSwitchKarabinerProfile keeps F3 and F6 direct while removing Shif
 
     const dockSwitchRule = profile.complex_modifications.rules[0];
     assert.equal(dockSwitchRule.description, DOCK_SWITCH_RULE_DESCRIPTION);
-    assert.equal(dockSwitchRule.manipulators.length, 5);
+    assert.equal(dockSwitchRule.manipulators.length, 6);
 
     const f3 = dockSwitchRule.manipulators.find(manipulator => manipulator.from.key_code === "f3");
     assert.deepEqual(f3.to, [{ shell_command: SMARTSHADOW_DIRECT_COMMAND }]);
@@ -187,6 +186,7 @@ test("applyDockSwitchKarabinerProfile treats Karabiner-reordered manipulators as
                     manipulators: rule.manipulators.map(manipulator => ({
                         from: manipulator.from,
                         to: manipulator.to,
+                        ...(manipulator.to_if_alone ? { to_if_alone: manipulator.to_if_alone } : {}),
                         type: manipulator.type
                     }))
                 }
@@ -252,4 +252,55 @@ test("applyDockSwitchKarabinerProfile enables the Logitech consumer interface us
         },
         LOGITECH_TOP_ROW_CONSUMER_DEVICE
     ]);
+});
+
+
+test("restores Caps Lock and migrates global and device right Command mappings without touching other keys", () => {
+    const old = key => ({ from: { key_code: key }, to: [{ key_code: key === "caps_lock" ? "f20" : "f13" }] });
+    const unrelated = { from: { key_code: "right_option" }, to: [{ key_code: "delete_forward" }] };
+    const deviceOnly = { from: { key_code: "f3" }, to: [{ key_code: "f4" }] };
+    const unrelatedManipulator = { type: "basic", from: { key_code: "a", modifiers: { mandatory: ["right_command"] } }, to: [{ key_code: "b" }] };
+    const profile = {
+        simple_modifications: [old("caps_lock"), old("right_command"), unrelated],
+        devices: [
+            { identifiers: { is_keyboard: true, vendor_id: 1452, product_id: 628 }, simple_modifications: [old("caps_lock"), old("right_command"), unrelated, deviceOnly] },
+            { identifiers: { is_keyboard: true, vendor_id: 1133, product_id: 50484 }, ignore: false, simple_modifications: [old("right_command"), unrelated, old("caps_lock")] }
+        ],
+        complex_modifications: { rules: [{ description: "legacy", manipulators: [{ type: "basic", ...old("caps_lock") }, { type: "basic", ...old("right_command") }, unrelatedManipulator] }] }
+    };
+    assert.equal(applyDockSwitchKarabinerProfile(profile).changed, true);
+    assert.deepEqual(profile.simple_modifications, [unrelated]);
+    assert.deepEqual(profile.devices[0].simple_modifications, [unrelated, deviceOnly]);
+    assert.deepEqual(profile.devices[1].simple_modifications, [unrelated]);
+    assert.equal(profile.devices[1].ignore, false);
+    assert.deepEqual(profile.complex_modifications.rules[1], { description: "legacy", manipulators: [unrelatedManipulator] });
+    const manipulators = profile.complex_modifications.rules.flatMap(rule => rule.manipulators);
+    assert.equal(manipulators.some(item => item.from.key_code === "caps_lock"), false);
+    const rightCommand = manipulators.filter(item => item.from.key_code === "right_command");
+    assert.equal(rightCommand.length, 1);
+    assert.deepEqual(rightCommand[0].from, { key_code: "right_command", modifiers: { optional: ["any"] } });
+    assert.deepEqual(rightCommand[0].to, [{ key_code: "right_command", lazy: true }]);
+    assert.deepEqual(rightCommand[0].to_if_alone, [{ key_code: "f20" }]);
+    const after = structuredClone(profile);
+    assert.equal(applyDockSwitchKarabinerProfile(profile).changed, false);
+    assert.deepEqual(profile, after);
+});
+
+test("applyDockSwitchKarabinerConfig migrates only the selected profile", () => {
+    const inactive = { selected: false, simple_modifications: [{ from: { key_code: "caps_lock" }, to: [{ key_code: "escape" }] }] };
+    const inactiveBefore = structuredClone(inactive);
+    const selected = { selected: true, simple_modifications: [{ from: { key_code: "caps_lock" }, to: [{ key_code: "f20" }] }] };
+    const config = { global: { show_in_menu_bar: false }, profiles: [inactive, selected] };
+    assert.equal(applyDockSwitchKarabinerConfig(config).changed, true);
+    assert.deepEqual(inactive, inactiveBefore);
+    assert.deepEqual(selected.simple_modifications, []);
+    assert.deepEqual(config.global, { show_in_menu_bar: false });
+    assert.equal(applyDockSwitchKarabinerConfig(config).changed, false);
+});
+
+test("applyDockSwitchKarabinerProfile normalizes a non-array devices field", () => {
+    const profile = { devices: {} };
+    assert.equal(applyDockSwitchKarabinerProfile(profile).changed, true);
+    assert.deepEqual(profile.devices, [LOGITECH_TOP_ROW_CONSUMER_DEVICE]);
+    assert.equal(applyDockSwitchKarabinerProfile(profile).changed, false);
 });

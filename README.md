@@ -4,6 +4,7 @@ Quickly switch among applications in the macOS Dock with one global hotkey.
 ## Documentation
 - Sphinx docs live in `docs/` (start at `docs/index.rst`).
 - `README.md` stays as the quick-start / behavior overview.
+- Repeatable Caps Lock/right Command state recording and physical-key acceptance: [Shortcut verification](docs/shortcut-verification.rst).
 
 <a id="release-record-gokit5-serial-button-control"></a>
 

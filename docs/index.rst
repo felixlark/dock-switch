@@ -21,3 +21,4 @@ Reference
    gokit5
    development
    configuration
+   shortcut-verification

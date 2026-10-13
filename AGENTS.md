@@ -63,6 +63,6 @@
 
 - Follow the global `~/.codex/AGENTS.md` and workspace `/Users/longbiao/Documents/AGENTS.md` development workflow: work in the canonical checkout with one writer and do not create new worktrees.
 - Use a task branch in the canonical checkout only when the task needs one; do not create manual worktree directories.
-- Put reusable build caches and DerivedData in `~/Library/Caches/<project-id>/`, durable work products in `~/Local/<project-id>/`, and one-run scratch under `$TMPDIR`; pass output paths explicitly.
+- Put reusable build caches and DerivedData in `~/Library/Caches/<project-id>/`, runtime state, data, tool repositories and active releases in `~/Library/Application Support/<project-id>/`, logs in `~/Library/Logs/<project-id>/`, and human-facing documents in `~/Documents/<mainline>/<project>/` (do not write anything new to `~/Local`; retain transition symlinks only and delete it once empty), and one-run scratch in a directory created by `mktemp -d` under `$TMPDIR`, removed after use; pass output paths explicitly.
 - Preserve existing dirty checkouts. Inspect `git status --short` before editing, and do not stash, commit, remove, migrate or clean user changes and pre-existing residue unless explicitly asked with an exact scope.
 - Existing worktrees and other pre-existing noncompliant residue stay read-only unless the user explicitly requests an exact cleanup or migration scope.

@@ -51,15 +51,32 @@ Physical-key acceptance sequence
    cannot prove chord semantics by itself.
 5. Continue the existing core flow: open the HUD, select an app using its shown
    key, require HUD dismissal, app activation, and configured window placement.
-   Capture the installed HUD and selected app through official Computer Use.
+   Inspect the installed HUD and selected app through official Computer Use,
+   and record the actual entry and step results in the receipt.
 
-Keep the actions/timestamps and screenshots alongside the trace. CLI
+Keep the actions/timestamps alongside the trace. CLI
 ``show-launcher`` may prepare a visible HUD for a selection check, but it does
 not establish F20 or Karabiner physical-key acceptance. Official Computer Use
 may reject a lone modifier or bypass the physical Karabiner path; report that
 gap without synthesizing input through another framework. Leave the HUD closed
-and the installed app running after verification. Screenshots are local evidence
-and must not be committed to this repository.
+and the installed app running after verification.
+
+Delivery entry
+--------------
+
+For this native macOS utility, give the installed app path
+``/Applications/dock-switch.app`` and the menu-bar entry ``Show Launcher`` in
+the receipt. It requires no account login; macOS permissions are a separate
+boundary. This utility has no hosted web UI. The public
+`verification guide <https://github.com/felixlark/dock-switch/blob/main/docs/shortcut-verification.rst>`_
+is an engineering artifact, not a replacement for the installed app or physical
+keyboard acceptance.
+
+When a result has an accessible system or page, provide its direct entry and
+login instructions if needed. Do not record video or add screenshots as a
+substitute for that entry. Preserve already collected evidence; do not delete it
+as part of changing the delivery format. Screenshots for results without an
+interface remain local evidence and must not be committed to this repository.
 
 Next milestone
 --------------

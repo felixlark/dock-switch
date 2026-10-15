@@ -8,6 +8,18 @@ const {
     specialLauncherItemForName
 } = require("../src/launcher-items");
 
+test("Feishu localized Dock names retain the configured F shortcut and placement", () => {
+    const config = require("../src/config.json").dock_items;
+    for (const name of ["Feishu", "飞书", "Lark", " LARK.app "]) {
+        const dockItems = [{ name, pos: { x: 10, y: 0 } }];
+        const item = findLauncherItemForKey(dockItems, config, "F");
+        assert.equal(item.name, "Feishu");
+        assert.equal(item.placement, "internal_fill");
+        assert.equal(buildLauncherItems(dockItems, config)[0].dockItem.name, name);
+    }
+    assert.equal(findLauncherItemForKey([{ name: "Feishu Helper", pos: { x: 10, y: 0 } }], config, "F"), null);
+});
+
 test("isExcludedLauncherApp marks fixed-key apps as excluded from ordinary fallback keys", () => {
     assert.equal(isExcludedLauncherApp("ChatGPT"), true);
     assert.equal(isExcludedLauncherApp("ChatGPT.app"), true);

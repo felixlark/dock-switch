@@ -2,7 +2,8 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-SOURCE_APP="$ROOT_DIR/dist/native/dock-switch.app"
+BUILD_ROOT="${DOCK_SWITCH_BUILD_ROOT:-$HOME/Local/dock-switch/build}"
+SOURCE_APP="$BUILD_ROOT/native/dock-switch.app"
 TARGET_APP="/Applications/dock-switch.app"
 ENTITLEMENTS="$ROOT_DIR/resources/entitlements.mac.plist"
 DEFAULT_IDENTITY="Developer ID Application: LONGBIAO CHEN (HJG65XBC25)"

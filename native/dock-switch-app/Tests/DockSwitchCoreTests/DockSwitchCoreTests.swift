@@ -3,6 +3,54 @@ import XCTest
 @testable import DockSwitchCore
 
 final class DockSwitchCoreTests: XCTestCase {
+    func testFeishuLocalizedDockNamesKeepFShortcutAndPlacement() {
+        let config = LauncherConfig(dockItems: [
+            LauncherConfigItem(name: "Feishu", key: "F", screen: "1", kind: nil, placement: "internal_fill", openPath: nil, appURL: nil)
+        ])
+        for name in ["Feishu", "飞书", "Lark", " LARK.app "] {
+            let dockItem = DockItemSnapshot(name: name, pos: CGPoint(x: 10, y: 0), size: CGSize(width: 50, height: 66))
+            let items = LauncherRules.buildLauncherItems(dockItems: [dockItem], config: config)
+            XCTAssertEqual(items.first?.key, "F")
+            XCTAssertEqual(items.first?.name, "Feishu")
+            XCTAssertEqual(items.first?.placement, "internal_fill")
+            XCTAssertEqual(items.first?.dockItem.name, name)
+        }
+    }
+
+    func testFeishuMainApplicationIdentityAndHelperExclusion() {
+        for requested in ["Feishu", "飞书", "Lark"] {
+            for localized in ["Feishu", "飞书", "Lark"] {
+                XCTAssertTrue(LauncherRules.matchesApplication(name: requested, localizedName: localized, bundleIdentifier: "com.electron.lark"))
+                XCTAssertTrue(LauncherRules.matchesApplication(name: requested, localizedName: localized, bundleIdentifier: nil))
+            }
+            XCTAssertTrue(LauncherRules.matchesApplication(name: requested, localizedName: "Different display label", bundleIdentifier: "com.electron.lark"))
+            XCTAssertFalse(LauncherRules.matchesApplication(name: requested, localizedName: "Feishu Helper (Renderer)", bundleIdentifier: "com.electron.lark.helper"))
+            XCTAssertFalse(LauncherRules.matchesApplication(name: requested, localizedName: "Lark Helper", bundleIdentifier: "com.electron.lark.helper"))
+        }
+        XCTAssertFalse(LauncherRules.matchesApplication(name: "Finder", localizedName: "Feishu", bundleIdentifier: "com.electron.lark"))
+    }
+
+    func testApplicationIdentityRecoversInvalidPIDByExactExecutable() {
+        let path = "/Applications/Xcode.app/Contents/Applications/DeviceHub.app/Contents/MacOS/DeviceHub"
+        XCTAssertEqual(ApplicationProcessIdentity.selectPID(reportedPID: -1, executablePath: path, candidates: [
+            (99, "/tmp/DeviceHub"), (39807, path)
+        ]), 39807)
+        XCTAssertNil(ApplicationProcessIdentity.selectPID(reportedPID: -1, executablePath: path, candidates: [(99, "/tmp/DeviceHub")]))
+        XCTAssertNil(ApplicationProcessIdentity.selectPID(reportedPID: -1, executablePath: nil, candidates: [(39807, path)]))
+        XCTAssertEqual(ApplicationProcessIdentity.selectPID(reportedPID: 10, executablePath: path, candidates: [(39807, path)]), 10)
+    }
+
+    func testCompactDeviceWindowKeepsPhysicalSizeAndCentersOnTarget() {
+        let current = DSRect(x: 100, y: 200, width: 282, height: 635)
+        let requested = DSRect(x: 2560, y: -276, width: 1152, height: 2018)
+        XCTAssertEqual(WindowMovementRules.targetBounds(requested: requested, current: current, fixedSize: true),
+                       DSRect(x: 2995, y: 415.5, width: 282, height: 635))
+        XCTAssertEqual(WindowMovementRules.targetBounds(requested: requested, current: current, fixedSize: false), requested)
+        let small = DSRect(x: 0, y: 30, width: 200, height: 400)
+        XCTAssertEqual(WindowMovementRules.targetBounds(requested: small, current: current, fixedSize: true),
+                       DSRect(x: 0, y: 30, width: 282, height: 635))
+    }
+
     private final class FakeLauncherWindowPlacement: LauncherWindowPlacement {
         var placeProcessResult = WindowActionResult(ok: false)
         var moveMouseResult = WindowActionResult(ok: false)
@@ -414,7 +462,7 @@ final class DockSwitchCoreTests: XCTestCase {
                 feedbackPoints.append(point)
                 expectation.fulfill()
             },
-            openItem: { _ in }
+            openItem: { _, completion in completion(true); return true }
         )
 
         service.activate(LauncherItem(
@@ -444,7 +492,7 @@ final class DockSwitchCoreTests: XCTestCase {
                 feedbackPoints.append(point)
                 expectation.fulfill()
             },
-            openItem: { _ in }
+            openItem: { _, completion in completion(true); return true }
         )
 
         service.activate(LauncherItem(
@@ -457,6 +505,36 @@ final class DockSwitchCoreTests: XCTestCase {
         XCTAssertEqual(placement.placedProcesses.count, 0)
         XCTAssertEqual(placement.movedApps, ["Finder"])
         XCTAssertEqual(feedbackPoints, [CGPoint(x: -100, y: 50)])
+    }
+
+    func testLauncherPlacementWaitsForSuccessfulOpenCompletion() {
+        let placement = FakeLauncherWindowPlacement()
+        placement.placeProcessResult = WindowActionResult(ok: true, feedbackPoint: .zero)
+        var completeOpen: ((Bool) -> Void)?
+        let placed = expectation(description: "placed after opening")
+        let service = LauncherService(
+            windowPlacement: placement, placeRetryDeadline: 0.1, placeRetryDelay: 0,
+            showMouseFeedback: { _ in placed.fulfill() },
+            openItem: { _, completion in completeOpen = completion; return true }
+        )
+        XCTAssertTrue(service.activate(LauncherItem(name: "Calendar", key: "C", placement: "internal_fill", dockItem: DockItemSnapshot(name: "Calendar", pos: .zero, size: .zero))))
+        RunLoop.current.run(until: Date().addingTimeInterval(0.03))
+        XCTAssertTrue(placement.placedProcesses.isEmpty)
+        completeOpen?(true)
+        wait(for: [placed], timeout: 1)
+        XCTAssertEqual(placement.placedProcesses.map(\.name), ["Calendar"])
+    }
+
+    func testFailedOpenDoesNotPlaceOrMovePointer() {
+        let placement = FakeLauncherWindowPlacement()
+        let service = LauncherService(
+            windowPlacement: placement, placeRetryDeadline: 0, placeRetryDelay: 0,
+            openItem: { _, completion in completion(false); return true }
+        )
+        service.activate(LauncherItem(name: "Calendar", key: "C", placement: "internal_fill", dockItem: DockItemSnapshot(name: "Calendar", pos: .zero, size: .zero)))
+        RunLoop.current.run(until: Date().addingTimeInterval(0.03))
+        XCTAssertTrue(placement.placedProcesses.isEmpty)
+        XCTAssertTrue(placement.movedApps.isEmpty)
     }
 
     func testOverlayAnimationPolicyShowsInstantlyAndHidesSwiftly() {

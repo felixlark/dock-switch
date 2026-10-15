@@ -4,6 +4,7 @@ Quickly switch among applications in the macOS Dock with one global hotkey.
 ## Documentation
 - Sphinx docs live in `docs/` (start at `docs/index.rst`).
 - `README.md` stays as the quick-start / behavior overview.
+- Repeatable Caps Lock/right Command state recording and physical-key acceptance: [Shortcut verification](docs/shortcut-verification.rst).
 
 <a id="release-record-gokit5-serial-button-control"></a>
 
@@ -22,7 +23,8 @@ This repository intentionally does not commit desktop screenshots. Local screens
 often expose menu bar state, Dock contents, account badges, and workspace details.
 
 ## How It Works
-- Press `F20` to open the floating launcher UI.
+- Tap right `Command` to open the floating launcher UI (Karabiner sends `F20`); right Command combinations still work normally. `F20` remains available directly.
+- The `Caps Lock` (中/英) key switches between the Chinese input source and U.S. using the macOS input-source setting.
 - Press the shown key for an app to focus it.
 - Karabiner should open SmartShadow and ChatGPT directly for the local `F3` and `F6` shortcuts. Left and right `Shift` should keep the default system behavior, with any legacy Shift launcher mappings removed.
 - Press an arrow key to fill the frontmost window on a physical display:
@@ -30,6 +32,7 @@ often expose menu bar state, Dock contents, account badges, and workspace detail
   - `→` right side display
   - `↑` external display
   - `↓` internal display
+- Device Hub compact phone windows retain their physical size and center on the selected display or half; expand with “Show in Device Hub” for a resizable window.
 - Press `【` to tile the frontmost window to the left half of its current display.
 - Press `】` to tile the frontmost window to the right half of its current display.
 - Press `F6` to open `ChatGPT` directly on the right side display, maximized to the display work area.
@@ -37,7 +40,7 @@ often expose menu bar state, Dock contents, account badges, and workspace detail
 - Press `F20` then right `Shift` to focus or open `Claude` on the right side display, maximized to the display work area.
 - Press `F3` to open `SmartShadow` directly on the left side display, maximized to the display work area.
 - Press left `Command` to focus or open `System Settings` on the internal display, maximized to the display work area.
-- Press right `Command` for a reserved no-op.
+- Tap right `Command` to toggle the HUD via Karabiner; it has no app-launch assignment inside the HUD.
 - Press `\` to focus or open `Terminal` on the right side display, maximized to the display work area.
 - App activation moves the pointer to the center of the activated or placed window; arrow display moves keep moving the pointer to the center of the target display.
 - A connected GoKit5 controller flashed with [open-embodied](https://github.com/felixlark/open-embodied) moves the pointer across displays and clicks the target point to activate the window there, without launching, creating, or moving app windows: minus = left side, plus = internal, voice = external, green/switch = right side. Missing external targets fall back to the internal main display.
@@ -89,7 +92,7 @@ Xiaohongshu Web App is available on `R` in the current default config.
 Google Chrome is available on `G` in the current default config.
 GitHub Web App is available on `H` in the current default config.
 ChatGPT, Codex, SmartShadow, Claude, and Command shortcuts render in the HUD with default Dock labels: `F6` for ChatGPT, `L⇧` for left Shift / Codex, `F3` for SmartShadow, `R⇧` for right Shift / Claude, and `⌘` for left/right `Command`. The app shortcuts are configurable in Dock Switch Settings while remaining excluded from ordinary fallback numbering. In Settings, click a shortcut cell and press the key; a lone left/right `Shift` press records `L⇧`/`R⇧`, and a saved key overrides the built-in default app for that key.
-Left `Command` opens System Settings on the internal display with `internal_fill`. Inside dock-switch's launcher, left `Shift` opens Codex on the external display with `external_fill`, right `Shift` opens Claude on the right side display with `side_right_fill`, and `F6` opens ChatGPT on the right side display with `side_right_fill`. Direct launcher shortcuts read the saved app placement even when the launcher overlay is closed. Karabiner single-key shortcuts are limited to the direct `F3` and `F6` exceptions: they open SmartShadow and ChatGPT, then use dock-switch placement for `side_left_fill` and `side_right_fill`. Legacy Karabiner left/right `Shift` launcher mappings should be removed so Shift returns to the default system behavior. `\` opens Terminal on the right side display with `side_right_fill`. Right `Command` is intentionally reserved as a no-op. External targets that are offline fall back to the internal main display.
+Left `Command` opens System Settings on the internal display with `internal_fill`. Inside dock-switch's launcher, left `Shift` opens Codex on the external display with `external_fill`, right `Shift` opens Claude on the right side display with `side_right_fill`, and `F6` opens ChatGPT on the right side display with `side_right_fill`. Direct launcher shortcuts read the saved app placement even when the launcher overlay is closed. Karabiner maps a tap of right `Command` to the `F20` HUD toggle and preserves Command chords. The direct `F3` and `F6` exceptions open SmartShadow and ChatGPT, then use dock-switch placement for `side_left_fill` and `side_right_fill`. Legacy Karabiner left/right `Shift` launcher mappings should be removed so Shift returns to the default system behavior. `\` opens Terminal on the right side display with `side_right_fill`. Right `Command` has no app-launch assignment inside the HUD; a tap toggles the HUD through Karabiner. External targets that are offline fall back to the internal main display.
 If no external display is available, `external_right_half` falls back to the right half of the internal display work area.
 If no external display is available, `external_left_half` falls back to the left half of the internal display work area.
 
@@ -174,7 +177,7 @@ dock-switch-cli move-chrome-window --profile-dir /tmp/chrome_profile-XXXXXX --x 
 App key/display mapping is stored in `src/config.json` under `dock_items`.
 
 ## Permissions and First Run
-- Map a key to `F20` (for example with [Karabiner-Elements](https://github.com/pqrs-org/Karabiner-Elements)).
+- Run `yarn karabiner:f20` to map a tap of right `Command` to `F20` with [Karabiner-Elements](https://github.com/pqrs-org/Karabiner-Elements) and restore `Caps Lock` to macOS input-source switching. Enable “Use the Caps Lock key to switch to and from U.S.” in System Settings → Keyboard → Input Sources → Edit.
 - To install the local single-key launcher mappings for `F3` and `F6`, run `yarn karabiner:f20`. The generated Karabiner rule opens SmartShadow directly on `F3` and ChatGPT directly on `F6`; it also removes legacy left/right `Shift` launcher mappings so Shift returns to the default system behavior.
 - SmartShadow's direct `F3` path opens `/Applications/SmartShadow.app` and uses dock-switch placement with `side_left_fill`.
 - Keep the installed app in macOS `Open at Login` so the global shortcut and control socket are available after login.
@@ -189,3 +192,9 @@ App key/display mapping is stored in `src/config.json` under `dock_items`.
 - Renderer/UI logic: `src/index.js`
 - Dock metadata provider: native Node addon (`native/dock-query`)
 - Canonical automation entrypoint: `bin/dock-switch-cli.js`
+
+Native build output is stored under `~/Local/dock-switch/build/`, with Swift caches under `~/Library/Caches/dock-switch/`. Set `DOCK_SWITCH_BUILD_ROOT` to override the package output location.
+
+### Preserving local launcher settings during a rebuild
+
+Set `DOCK_SWITCH_CONFIG_SOURCE` to an existing config JSON when running `yarn dist` to package that configuration before signing. This preserves local key/placement overrides without editing the sealed installed bundle after installation. All native app selections (HUD, direct launcher shortcuts, and `place --app`) use the same application-open request with activation enabled and new-instance creation disabled. This asks an already-running app to reopen its window as a normal Dock click would, rather than only activating its process. Feishu/Lark/飞书 resolve by `com.electron.lark`; explicit `open_path` app bundles take precedence. File and directory targets retain their normal system-open behavior. Window restoration depends on the target app handling the standard reopen request.

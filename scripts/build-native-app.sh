@@ -3,30 +3,35 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 PACKAGE_DIR="$ROOT_DIR/native/dock-switch-app"
-APP_DIR="$ROOT_DIR/dist/native/dock-switch.app"
+BUILD_ROOT="${DOCK_SWITCH_BUILD_ROOT:-$HOME/Local/dock-switch/build}"
+SWIFT_SCRATCH="${DOCK_SWITCH_SWIFT_SCRATCH:-$HOME/Library/Caches/dock-switch/swift-build}"
+SWIFT_CACHE="${DOCK_SWITCH_SWIFT_CACHE:-$HOME/Library/Caches/dock-switch/swift-cache}"
+APP_DIR="$BUILD_ROOT/native/dock-switch.app"
+SETTINGS_APP="$BUILD_ROOT/settings/DockSwitchSettings.app"
 CONTENTS_DIR="$APP_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
 RESOURCES_DIR="$CONTENTS_DIR/Resources"
 APP_RESOURCES_DIR="$RESOURCES_DIR/app"
 ENTITLEMENTS="$ROOT_DIR/resources/entitlements.mac.plist"
+CONFIG_SOURCE="${DOCK_SWITCH_CONFIG_SOURCE:-$ROOT_DIR/src/config.json}"
 DEFAULT_IDENTITY="Developer ID Application: LONGBIAO CHEN (HJG65XBC25)"
 IDENTITY="${CSC_NAME:-$DEFAULT_IDENTITY}"
 
-swift build --package-path "$PACKAGE_DIR" -c release --arch arm64
+swift build --package-path "$PACKAGE_DIR" --scratch-path "$SWIFT_SCRATCH" --cache-path "$SWIFT_CACHE" -c release --arch arm64
 # Newer SwiftPM releases moved products out of .build/<triple>/release; ask
 # SwiftPM for the real location so a stale binary is never packaged.
-BUILD_DIR="$(swift build --package-path "$PACKAGE_DIR" -c release --arch arm64 --show-bin-path)"
+BUILD_DIR="$(swift build --package-path "$PACKAGE_DIR" --scratch-path "$SWIFT_SCRATCH" --cache-path "$SWIFT_CACHE" -c release --arch arm64 --show-bin-path)"
 
 rm -rf "$APP_DIR"
 mkdir -p "$MACOS_DIR" "$APP_RESOURCES_DIR/src" "$APP_RESOURCES_DIR/bin"
 cp "$BUILD_DIR/DockSwitch" "$MACOS_DIR/DockSwitch"
 cp "$BUILD_DIR/DockSwitchGokit5Serial" "$RESOURCES_DIR/DockSwitchGokit5Serial"
-cp "$ROOT_DIR/src/config.json" "$APP_RESOURCES_DIR/src/config.json"
+cp "$CONFIG_SOURCE" "$APP_RESOURCES_DIR/src/config.json"
 cp "$ROOT_DIR/bin/dock-switch-cli.js" "$APP_RESOURCES_DIR/bin/dock-switch-cli.js"
 chmod 755 "$APP_RESOURCES_DIR/bin/dock-switch-cli.js"
 
-if [[ -d "$ROOT_DIR/native/settings-app/build/DockSwitchSettings.app" ]]; then
-  cp -R "$ROOT_DIR/native/settings-app/build/DockSwitchSettings.app" "$RESOURCES_DIR/DockSwitchSettings.app"
+if [[ -d "$SETTINGS_APP" ]]; then
+  cp -R "$SETTINGS_APP" "$RESOURCES_DIR/DockSwitchSettings.app"
 fi
 
 if [[ -f "$ROOT_DIR/resources/icon@2x.icns" ]]; then
@@ -59,7 +64,7 @@ cat > "$CONTENTS_DIR/Info.plist" <<'PLIST'
         <string>MacOSX</string>
     </array>
     <key>CFBundleShortVersionString</key>
-    <string>1.0.3</string>
+    <string>1.0.1</string>
     <key>CFBundleVersion</key>
     <string>1</string>
     <key>DTCompiler</key>

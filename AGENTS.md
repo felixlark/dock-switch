@@ -21,7 +21,7 @@
 | --- | --- | --- | --- |
 | Verify display labels before placement work | `node bin/dock-switch-cli.js displays` | Display labels and bounds are current | Re-map display-target logic from live labels before editing config |
 | Change launcher/window behavior | `node --test test/<name>.test.js` then `yarn dist` | Tests pass and `/Applications/dock-switch.app` is replaced by the new build | Reinstall previous app bundle from backup or revert only the touched source files |
-| Refresh Karabiner single-key launcher mapping | `yarn karabiner:f20` then `yarn karabiner:f20:check` | F3 opens SmartShadow directly; F6 opens ChatGPT directly; legacy left/right Shift mappings are removed so Shift stays default | Inspect `/Users/longbiao/.config/karabiner/karabiner.json` with `jq empty` and rerun the script |
+| Refresh Karabiner single-key launcher mapping | `yarn karabiner:f20` then `yarn karabiner:f20:check` | Right Command alone toggles the HUD via F20, preserving Command chords; Caps Lock passes through for system input-source switching; F3/F6 remain direct app shortcuts and Shift stays default | Inspect `/Users/longbiao/.config/karabiner/karabiner.json` with `jq empty` and rerun the script |
 | Place Computer Use browser beside Codex | `node scripts/place-computer-use-browser.js` | `Google Chrome` moves to the right half of the focused Codex display | Focus the intended Codex window and rerun; if stale, reset the Computer Use binding |
 
 ## Troubleshooting
@@ -63,6 +63,6 @@
 
 - Follow the global `~/.codex/AGENTS.md` and workspace `/Users/longbiao/Documents/AGENTS.md` development workflow: work in the canonical checkout with one writer and do not create new worktrees.
 - Use a task branch in the canonical checkout only when the task needs one; do not create manual worktree directories.
-- Put reusable build caches and DerivedData in `~/Library/Caches/<project-id>/`, durable work products in `~/Local/<project-id>/`, and one-run scratch under `$TMPDIR`; pass output paths explicitly.
+- Put reusable build caches and DerivedData in `~/Library/Caches/<project-id>/`, runtime state, data, tool repositories and active releases in `~/Library/Application Support/<project-id>/`, logs in `~/Library/Logs/<project-id>/`, and human-facing documents in `~/Documents/<mainline>/<project>/` (do not write anything new to `~/Local`; retain transition symlinks only and delete it once empty), and one-run scratch in a directory created by `mktemp -d` under `$TMPDIR`, removed after use; pass output paths explicitly.
 - Preserve existing dirty checkouts. Inspect `git status --short` before editing, and do not stash, commit, remove, migrate or clean user changes and pre-existing residue unless explicitly asked with an exact scope.
 - Existing worktrees and other pre-existing noncompliant residue stay read-only unless the user explicitly requests an exact cleanup or migration scope.

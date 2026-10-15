@@ -505,7 +505,16 @@ public enum LauncherRules {
         }
         normalized = normalized.lowercased()
         if normalized == "chrome" { return "google chrome" }
+        if ["feishu", "lark", "飞书"].contains(normalized) { return "feishu" }
         return normalized
+    }
+
+    /// Match the main application, never a similarly named Electron helper.
+    public static func matchesApplication(name: String, localizedName: String, bundleIdentifier: String?) -> Bool {
+        if normalizeAppName(name) == "feishu", bundleIdentifier == "com.electron.lark" {
+            return true
+        }
+        return normalizeAppName(name) == normalizeAppName(localizedName)
     }
 
     public static func normalizeKey(_ value: String) -> String {
@@ -983,14 +992,14 @@ public final class LauncherService {
     private let placeRetryDeadline: TimeInterval
     private let placeRetryDelay: TimeInterval
     private let showMouseFeedback: (CGPoint) -> Void
-    private let openItem: (LauncherItem) -> Void
+    private let openItem: (LauncherItem, @escaping (Bool) -> Void) -> Bool
 
     public init(
         windowPlacement: any LauncherWindowPlacement = WindowPlacementService(),
         placeRetryDeadline: TimeInterval = 1.6,
         placeRetryDelay: TimeInterval = 0.08,
         showMouseFeedback: @escaping (CGPoint) -> Void = { _ in },
-        openItem: ((LauncherItem) -> Void)? = nil
+        openItem: ((LauncherItem, @escaping (Bool) -> Void) -> Bool)? = nil
     ) {
         self.windowPlacement = windowPlacement
         self.placeRetryDeadline = placeRetryDeadline
@@ -999,13 +1008,22 @@ public final class LauncherService {
         self.openItem = openItem ?? Self.open
     }
 
-    public func activate(_ item: LauncherItem) {
-        let placement = item.placement ?? (item.kind == "web_app" ? "internal_fill" : nil)
-        openItem(item)
-        if let placement {
-            retryPlace(item: item, placement: placement, until: Date().addingTimeInterval(placeRetryDeadline))
-        } else {
-            retryMoveMouseToApplicationWindowCenter(appName: item.name, until: Date().addingTimeInterval(placeRetryDeadline))
+    @discardableResult
+    public func activate(_ item: LauncherItem) -> Bool {
+        if !Thread.isMainThread {
+            return DispatchQueue.main.sync { self.activate(item) }
+        }
+        return openItem(item) { [weak self] opened in
+            guard opened else { return }
+            DispatchQueue.main.async {
+                guard let self else { return }
+                let placement = item.placement ?? (item.kind == "web_app" ? "internal_fill" : nil)
+                if let placement {
+                    self.retryPlace(item: item, placement: placement, until: Date().addingTimeInterval(self.placeRetryDeadline))
+                } else {
+                    self.retryMoveMouseToApplicationWindowCenter(appName: item.name, until: Date().addingTimeInterval(self.placeRetryDeadline))
+                }
+            }
         }
     }
 
@@ -1022,13 +1040,8 @@ public final class LauncherService {
         activate(item)
     }
 
-    private static func open(_ item: LauncherItem) {
-        if let raw = item.openPath, !raw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            let expanded = WebAppRuntime.resolveOpenPath(raw)
-            NSWorkspace.shared.open(URL(fileURLWithPath: expanded))
-            return
-        }
-        NSWorkspace.shared.launchApplication(item.name)
+    private static func open(_ item: LauncherItem, completion: @escaping (Bool) -> Void) -> Bool {
+        ApplicationLauncher().open(name: item.name, openPath: item.openPath, completion: completion)
     }
 
     private func retryPlace(item: LauncherItem, placement: String, until deadline: Date) {
@@ -2106,6 +2119,7 @@ public final class ControlServer {
     private let showMouseFeedback: (CGPoint) -> Void
     private let getGokit5Status: () -> [String: Any]
     private let selectCodexDisplay: ([String: Any]) -> [String: Any]
+    private let launcherService: LauncherService
 
     public init(
         displayService: DisplayService,
@@ -2123,6 +2137,7 @@ public final class ControlServer {
         self.showMouseFeedback = showMouseFeedback
         self.getGokit5Status = getGokit5Status
         self.selectCodexDisplay = selectCodexDisplay
+        self.launcherService = LauncherService(windowPlacement: windowPlacement, showMouseFeedback: showMouseFeedback)
     }
 
     deinit {
@@ -2217,9 +2232,9 @@ public final class ControlServer {
                   let placement = command["placement"] as? String else {
                 return ["ok": false, "error": "appName and placement are required"]
             }
-            NSWorkspace.shared.launchApplication(appName)
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
-                _ = self.showFeedbackIfSuccessful(self.windowPlacement.placeProcess(name: appName, placement: placement))
+            let item = LauncherItem(name: appName, key: "", placement: placement, dockItem: DockItemSnapshot(name: appName, pos: .zero, size: .zero))
+            guard launcherService.activate(item) else {
+                return ["ok": false, "error": "Application not found: \(appName)"]
             }
             return ["ok": true]
         case "place-pid":
@@ -2316,12 +2331,50 @@ private func axChildren(_ element: AXUIElement) -> [AXUIElement]? {
     return array
 }
 
+// LaunchServices can expose a running app (notably Device Hub) with PID -1.
+// Recover only window owners whose live executable matches the app identity.
+public enum ApplicationProcessIdentity {
+    public static func selectPID(reportedPID: pid_t, executablePath: String?, candidates: [(pid: pid_t, executablePath: String)]) -> pid_t? {
+        if reportedPID > 0 { return reportedPID }
+        guard let executablePath, !executablePath.isEmpty else { return nil }
+        return candidates.first { $0.pid > 0 && $0.executablePath == executablePath }?.pid
+    }
+
+    public static func resolvedPID(for app: NSRunningApplication) -> pid_t? {
+        if app.processIdentifier > 0 { return app.processIdentifier }
+        guard let executable = app.executableURL?.resolvingSymlinksInPath().path,
+              let windows = CGWindowListCopyWindowInfo(.optionAll, kCGNullWindowID) as? [[String: Any]] else { return nil }
+        var seen = Set<pid_t>()
+        let candidates = windows.compactMap { info -> (pid: pid_t, executablePath: String)? in
+            guard let number = info[kCGWindowOwnerPID as String] as? NSNumber else { return nil }
+            let pid = number.int32Value
+            guard pid > 0, seen.insert(pid).inserted else { return nil }
+            var buffer = [CChar](repeating: 0, count: 4096)
+            guard proc_pidpath(pid, &buffer, UInt32(buffer.count)) > 0 else { return nil }
+            let path = URL(fileURLWithPath: String(cString: buffer)).resolvingSymlinksInPath().path
+            return (pid, path)
+        }
+        return selectPID(reportedPID: app.processIdentifier, executablePath: executable, candidates: candidates)
+    }
+}
+
+public enum WindowMovementRules {
+    public static func targetBounds(requested: DSRect, current: DSRect, fixedSize: Bool) -> DSRect {
+        guard fixedSize else { return requested }
+        return DSRect(
+            x: requested.x + max(0, (requested.width - current.width) / 2),
+            y: requested.y + max(0, (requested.height - current.height) / 2),
+            width: current.width,
+            height: current.height
+        )
+    }
+}
+
 private func copyApplication(named name: String) -> AXUIElement? {
-    let normalized = LauncherRules.normalizeAppName(name)
     guard let app = NSWorkspace.shared.runningApplications.first(where: {
-        LauncherRules.normalizeAppName($0.localizedName ?? "") == normalized
-    }) else { return nil }
-    return AXUIElementCreateApplication(app.processIdentifier)
+        LauncherRules.matchesApplication(name: name, localizedName: $0.localizedName ?? "", bundleIdentifier: $0.bundleIdentifier)
+    }), let pid = ApplicationProcessIdentity.resolvedPID(for: app) else { return nil }
+    return AXUIElementCreateApplication(pid)
 }
 
 private func frontmostApplicationAXElement() -> AXUIElement? {
@@ -2329,7 +2382,8 @@ private func frontmostApplicationAXElement() -> AXUIElement? {
           LauncherRules.normalizeAppName(app.localizedName ?? "") != "dock-switch" else {
         return nil
     }
-    return AXUIElementCreateApplication(app.processIdentifier)
+    guard let pid = ApplicationProcessIdentity.resolvedPID(for: app) else { return nil }
+    return AXUIElementCreateApplication(pid)
 }
 
 private func firstWindow(in app: AXUIElement) -> AXUIElement? {
@@ -2401,14 +2455,23 @@ private func moveFirstWindow(app: AXUIElement, bounds: DSRect) -> Bool {
 private func moveWindow(_ win: AXUIElement, bounds: DSRect) -> Bool {
     guard AXIsProcessTrusted() else { return false }
     clearAXBoolIfTrueAndSettable(win, attr: "AXFullScreen" as CFString)
-    let moved = applyWindowBoundsPrecisely(win, bounds: bounds)
+    // Device Hub's compact deviceWindow advertises a settable AXSize, but
+    // enforces its physical-size frame. Setting size also shifts its origin.
+    let identifier = axString(win, kAXIdentifierAttribute as CFString) ?? ""
+    var pid = pid_t()
+    _ = AXUIElementGetPid(win, &pid)
+    let fixedSize = NSRunningApplication(processIdentifier: pid)?.bundleIdentifier == "com.apple.dt.Devices" &&
+        identifier.hasPrefix("deviceWindow-")
+    guard let current = windowBounds(win) else { return false }
+    let target = WindowMovementRules.targetBounds(requested: bounds, current: current, fixedSize: fixedSize)
+    let moved = applyWindowBoundsPrecisely(win, bounds: target, resize: !fixedSize)
     if moved {
         AXUIElementPerformAction(win, kAXRaiseAction as CFString)
     }
     return moved
 }
 
-private func applyWindowBoundsPrecisely(_ win: AXUIElement, bounds: DSRect) -> Bool {
+private func applyWindowBoundsPrecisely(_ win: AXUIElement, bounds: DSRect, resize: Bool = true) -> Bool {
     var point = CGPoint(x: bounds.x, y: bounds.y)
     var size = CGSize(width: bounds.width, height: bounds.height)
     guard let pointValue = AXValueCreate(.cgPoint, &point),
@@ -2428,9 +2491,9 @@ private func applyWindowBoundsPrecisely(_ win: AXUIElement, bounds: DSRect) -> B
     }
 
     func applyOnce() {
-        _ = AXUIElementSetAttributeValue(win, kAXSizeAttribute as CFString, sizeValue)
+        if resize { _ = AXUIElementSetAttributeValue(win, kAXSizeAttribute as CFString, sizeValue) }
         _ = AXUIElementSetAttributeValue(win, kAXPositionAttribute as CFString, pointValue)
-        _ = AXUIElementSetAttributeValue(win, kAXSizeAttribute as CFString, sizeValue)
+        if resize { _ = AXUIElementSetAttributeValue(win, kAXSizeAttribute as CFString, sizeValue) }
         Thread.sleep(forTimeInterval: 0.012)
     }
 

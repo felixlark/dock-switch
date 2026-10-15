@@ -83,3 +83,11 @@
 
 1. When adding or lowering any limit, slot count, quota, gate, threshold, or backoff (including concurrency, load admission, and timeout backoff), the PR body must include a separate “新增限制” (New limits) section stating the location, default value, and rationale. The repository owner must finalize the change before it can be merged. Such changes must not bypass a PR to enter main directly.
 2. Resource parameters default to unlimited operation with observation only. Any necessary limit must be enabled through explicit configuration; do not hard-code maximum values. Comments must cite the source of external hard limits, such as external API rate limits or deployment locks.
+
+## 合并前评审
+
+合并前须等待 Codex 自动评审完成，且评审意见已全部处理清零（无未解决的阻塞性评论）之后，方可合并。不得在评审结果出来之前合并。
+
+### Pre-merge review (English translation)
+
+Before merging, wait for Codex automatic review to finish and address all review feedback, leaving no unresolved blocking comments. Do not merge before the review results are available.

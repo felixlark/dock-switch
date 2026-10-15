@@ -1,0 +1,6 @@
+---
+description: Project rules for every coding agent
+alwaysApply: true
+---
+
+Read and follow AGENTS.md at the repository root. It is the single source of project rules for all coding agents (Codex, Claude Code, Cursor Agent); this file only points to it.

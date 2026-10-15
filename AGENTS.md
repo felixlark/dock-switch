@@ -40,7 +40,7 @@
 
 ## Release/Deploy
 
-- Default flow is direct maintenance on `main` unless the user asks for another branch.
+- Changes go issue → branch → pull request; merge after `yarn test` passes and all review comments are resolved.
 - "Ship it" means build/package/install the app, not just patch source.
 - Keep README and docs aligned with the installed app behavior.
 
@@ -66,3 +66,10 @@
 - Put reusable build caches and DerivedData in `~/Library/Caches/<project-id>/`, runtime state, data, tool repositories and active releases in `~/Library/Application Support/<project-id>/`, logs in `~/Library/Logs/<project-id>/`, and human-facing documents in `~/Documents/<mainline>/<project>/` (do not write anything new to `~/Local`; retain transition symlinks only and delete it once empty), and one-run scratch in a directory created by `mktemp -d` under `$TMPDIR`, removed after use; pass output paths explicitly.
 - Preserve existing dirty checkouts. Inspect `git status --short` before editing, and do not stash, commit, remove, migrate or clean user changes and pre-existing residue unless explicitly asked with an exact scope.
 - Existing worktrees and other pre-existing noncompliant residue stay read-only unless the user explicitly requests an exact cleanup or migration scope.
+
+## Shared Workflow For All Coding Agents
+
+- This file is the single source of project rules for every coding agent (Codex, Claude Code, Cursor Agent). `CLAUDE.md` and `.cursor/rules/agents.mdc` only point here; do not add separate rules there.
+- Never force-push.
+- Issues, pull requests, commit messages and comments use neutral technical and product wording.
+- Never commit credentials, tokens, private keys or webhook URLs; scan for secrets before committing.

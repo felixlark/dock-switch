@@ -3,7 +3,7 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 PACKAGE_DIR="$ROOT_DIR/native/dock-switch-app"
-BUILD_ROOT="${DOCK_SWITCH_BUILD_ROOT:-$HOME/Local/dock-switch/build}"
+BUILD_ROOT="${DOCK_SWITCH_BUILD_ROOT:-$HOME/Library/Caches/dock-switch/build}"
 SWIFT_SCRATCH="${DOCK_SWITCH_SWIFT_SCRATCH:-$HOME/Library/Caches/dock-switch/swift-build}"
 SWIFT_CACHE="${DOCK_SWITCH_SWIFT_CACHE:-$HOME/Library/Caches/dock-switch/swift-cache}"
 APP_DIR="$BUILD_ROOT/native/dock-switch.app"
@@ -64,7 +64,7 @@ cat > "$CONTENTS_DIR/Info.plist" <<'PLIST'
         <string>MacOSX</string>
     </array>
     <key>CFBundleShortVersionString</key>
-    <string>1.0.1</string>
+    <string>1.0.2</string>
     <key>CFBundleVersion</key>
     <string>1</string>
     <key>DTCompiler</key>

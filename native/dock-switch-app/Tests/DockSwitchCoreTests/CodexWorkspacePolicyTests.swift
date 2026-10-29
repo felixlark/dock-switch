@@ -41,6 +41,23 @@ final class CodexWorkspacePolicyTests: XCTestCase {
         XCTAssertTrue(tracker.observe(window: "w", chat: "after-save", workspaceOpen: false))
     }
 
+    func testShortDialogCannotBeErasedBeforeDeferredSwitchInspection() {
+        for context in [CodexWorkspaceStructuralContext.dialog, .unknown] {
+            var tracker = CodexWorkspaceSwitchTracker<String>()
+            _ = tracker.observe(window: "w", chat: "before", workspaceOpen: false)
+            // Both signals arrive before the deferred action callback runs.
+            tracker.observeStructuralContext(context)
+            tracker.observeStructuralContext(.clear)
+            XCTAssertFalse(tracker.hasRecognizedChat)
+            XCTAssertFalse(tracker.observe(window: "w", chat: "remounted-same-chat", workspaceOpen: false))
+            XCTAssertTrue(tracker.observe(window: "w", chat: "different-chat", workspaceOpen: false))
+        }
+        var tracker = CodexWorkspaceSwitchTracker<Int>()
+        _ = tracker.observe(window: 1, chat: 10, workspaceOpen: false)
+        tracker.observeStructuralContext(.clear)
+        XCTAssertTrue(tracker.observe(window: 1, chat: 20, workspaceOpen: false))
+    }
+
     func testFirstOpenAfterStartingOutsideChat() {
         var tracker = CodexWorkspaceSwitchTracker<Int>()
         tracker.startOutsideChat()

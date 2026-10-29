@@ -10,6 +10,15 @@ public struct CodexWorkspaceSwitchTracker<Identity: Equatable> {
 
     public mutating func reset() { previous = nil; hasBaseline = false }
 
+    // Called synchronously for shell notifications, before action coalescing.
+    // A later clear signal must not erase evidence of a short-lived dialog.
+    mutating func observeStructuralContext(_ context: CodexWorkspaceStructuralContext) {
+        switch context {
+        case .dialog, .unknown: reset()
+        case .clear: break
+        }
+    }
+
     /// Attach at Home/Settings/no window: the next recognized chat is an open.
     public mutating func startOutsideChat() { previous = nil; hasBaseline = true }
 
@@ -20,6 +29,8 @@ public struct CodexWorkspaceSwitchTracker<Identity: Equatable> {
         return changed && !workspaceOpen
     }
 }
+
+enum CodexWorkspaceStructuralContext { case clear, dialog, unknown }
 
 public enum CodexWorkspacePreference {
     public static let domain = "me.longbiaochen.dock-switch"

@@ -158,6 +158,9 @@ public final class CodexWorkspaceObserver {
             // events or nested browser web areas as a switch signal.
             guard attribute(element, kAXRoleAttribute) as? String == "AXWebArea",
                   CodexWorkspaceShell.isPrimaryWebArea(role: "AXWebArea", url: attribute(element, kAXURLAttribute) as? URL) else { return }
+            // Preserve a transient modal before trailing coalescing can hide its
+            // complete mount/dismiss cycle. This phase cannot press any control.
+            observeShellContext()
         }
         if name == kAXUIElementDestroyedNotification, let dialog, CFEqual(dialog, element) {
             dialogDismissalCount += 1
@@ -249,14 +252,32 @@ public final class CodexWorkspaceObserver {
         case unknown
     }
 
-    private func snapshot() -> Snapshot {
+    private func focusedStandardWindow() -> AXUIElement? {
         guard pid != nil, let application, let window = elementAttribute(application, kAXFocusedWindowAttribute),
               attribute(window, kAXSubroleAttribute) as? String == kAXStandardWindowSubrole,
-              attribute(window, kAXMinimizedAttribute) as? Bool == false else { return .unknown }
+              attribute(window, kAXMinimizedAttribute) as? Bool == false else { return nil }
+        return window
+    }
+
+    private func observeShellContext() {
+        guard let window = focusedStandardWindow() else {
+            tracker.observeStructuralContext(.unknown)
+            return
+        }
+        switch visibleDialog(in: window) {
+        case .found(let element):
+            tracker.observeStructuralContext(.dialog)
+            watchDialog(element)
+        case .unknown: tracker.observeStructuralContext(.unknown)
+        case .absent: tracker.observeStructuralContext(.clear)
+        }
+    }
+
+    private func visibleDialog(in window: AXUIElement) -> CodexWorkspaceSearchResult<AXUIElement> {
         switch readAttribute(window, "AXSheets") {
         case .value(let value):
             guard let sheets = value as? [AXUIElement] else { return .unknown }
-            if let sheet = sheets.first { return .modal(sheet) }
+            if let sheet = sheets.first { return .found(sheet) }
         case .absent: break
         case .failed: return .unknown
         }
@@ -265,9 +286,18 @@ public final class CodexWorkspaceObserver {
         switch CodexWorkspaceTreeSearch.findNode(root: AXIdentity(window), read: readNode, matching: {
             $0.subrole == "AXApplicationDialog" || ["AXDialog", "AXSheet"].contains($0.role)
         }) {
-        case .absent: break
-        case .found(let identity): return .modal(identity.element)
+        case .absent: return .absent
+        case .found(let identity): return .found(identity.element)
         case .unknown: return .unknown
+        }
+    }
+
+    private func snapshot() -> Snapshot {
+        guard let window = focusedStandardWindow() else { return .unknown }
+        switch visibleDialog(in: window) {
+        case .found(let element): return .modal(element)
+        case .unknown: return .unknown
+        case .absent: break
         }
         let toolbar: AXUIElement
         switch find(in: window, matching: { role, label in role == kAXToolbarRole && label == "Chat toolbar" }) {

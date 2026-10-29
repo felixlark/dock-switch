@@ -84,7 +84,7 @@ Official Open Computer Use (`mcp__open_computer_use`) visibly exercised installe
 | Two existing chats temporarily sharing the same title | Both closed targets reopened on real switches; titles were not used as identity |
 | Cmd+T | One additional New tab; URL field focused; test tab then removed |
 | Disable setting, close pane, switch away/back | Subscriptions detached to zero; pane stayed closed |
-| Re-enable while a chat is closed | Seeded without opening; next actual round trip reopened it |
+| Re-enable while a chat is closed | Seeded the current closed chat without opening; subsequent navigation to another closed chat reopened that target |
 | Open same chat in another window, manually close its pane, focus original then return | Closed second-window pane reopened once; original retained one tab |
 | Close test-created window | Returned to original window; subscriptions returned from seven to six |
 

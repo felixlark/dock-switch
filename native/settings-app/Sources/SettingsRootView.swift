@@ -61,12 +61,26 @@ struct SettingsRootView: View {
             Spacer()
             HStack {
                 Button("刷新状态") { store.loadPhraseSettings() }
+                Menu("预览提示") {
+                    Button("入库成功") { previewTip("added") }
+                    Button("已有短语") { previewTip("known") }
+                    Button("错误提示") { previewTip("error") }
+                    Divider()
+                    Button("浅色外观") { previewTip("light") }
+                    Button("深色外观") { previewTip("dark") }
+                }
+                .fixedSize()
                 Spacer()
                 Button("应用") { store.savePhraseSettings() }
                     .buttonStyle(.borderedProminent)
             }
         }
         .padding(28)
+    }
+
+    private func previewTip(_ variant: String) {
+        DistributedNotificationCenter.default().postNotificationName(CustomPhraseShortcut.previewRequested,
+            object: variant, userInfo: nil, deliverImmediately: true)
     }
 
     private var header: some View {

@@ -2,6 +2,7 @@ import AppKit
 import ApplicationServices
 import Carbon
 import DockSwitchCore
+import SwiftUI
 
 /// Owns the global shortcut and selected-text flow in the existing app. The
 /// previously approved local component owns encoding, backups and append-only
@@ -15,6 +16,7 @@ final class CustomPhraseController {
     private var activeShortcut: CustomPhraseShortcut?
     private var observer: NSObjectProtocol?
     private var recordingObserver: NSObjectProtocol?
+    private var previewObserver: NSObjectProtocol?
     private var settingsExitObserver: NSObjectProtocol?
     private var recording = false
     private var busy = false
@@ -22,6 +24,19 @@ final class CustomPhraseController {
     private var dismissTip: DispatchWorkItem?
 
     func start() {
+        previewObserver = DistributedNotificationCenter.default().addObserver(forName: CustomPhraseShortcut.previewRequested,
+            object: nil, queue: .main) { [weak self] note in
+                let variant = note.object as? String ?? "added"
+                let message: String
+                switch variant {
+                case "known": message = "已有：原生短语 → dtty"
+                case "error": message = "未添加：请选择一个连续中文词组，不要包含空格或换行。"
+                default: message = "已入库：原生短语 → dtty\n如未出词，请重开当前应用"
+                }
+                let appearance = variant == "light" ? NSAppearance(named: .aqua)
+                    : variant == "dark" ? NSAppearance(named: .darkAqua) : nil
+                self?.showTip(message, preview: true, appearance: appearance)
+            }
         observer = DistributedNotificationCenter.default().addObserver(forName: CustomPhraseShortcut.changed,
             object: nil, queue: .main) { [weak self] _ in self?.configure() }
         recordingObserver = DistributedNotificationCenter.default().addObserver(forName: CustomPhraseShortcut.recordingChanged,
@@ -47,6 +62,7 @@ final class CustomPhraseController {
         if let observer { DistributedNotificationCenter.default().removeObserver(observer) }
         observer = nil
         if let recordingObserver { DistributedNotificationCenter.default().removeObserver(recordingObserver) }
+        if let previewObserver { DistributedNotificationCenter.default().removeObserver(previewObserver) }
         if let settingsExitObserver { NSWorkspace.shared.notificationCenter.removeObserver(settingsExitObserver) }
         if let hotKey { UnregisterEventHotKey(hotKey) }
         hotKey = nil
@@ -201,9 +217,11 @@ final class CustomPhraseController {
     private func fail(_ error: Error) { DispatchQueue.main.async { [self] in finish("未添加：\(error.localizedDescription)") } }
     private func finish(_ message: String) { busy = false; showTip(message) }
 
-    private func showTip(_ message: String) {
+    private func showTip(_ message: String, preview: Bool = false, appearance: NSAppearance? = nil) {
         dismissTip?.cancel(); tip?.close()
-        let size = NSSize(width: 440, height: 86)
+        let content = PhraseTipContent(message: message, preview: preview)
+        let hosting = NSHostingView(rootView: PhraseTipView(content: content))
+        let size = hosting.fittingSize
         let mouse = NSEvent.mouseLocation
         let screen = NSScreen.screens.first { $0.frame.contains(mouse) } ?? NSScreen.main
         let area = screen?.visibleFrame ?? NSRect(origin: mouse, size: size)
@@ -211,15 +229,33 @@ final class CustomPhraseController {
             y: min(max(mouse.y - size.height - 16, area.minY), area.maxY - size.height), width: size.width, height: size.height)
         let panel = NSPanel(contentRect: frame, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         panel.level = .floating; panel.isReleasedWhenClosed = false; panel.ignoresMouseEvents = true
-        panel.backgroundColor = .windowBackgroundColor; panel.hasShadow = true
+        panel.appearance = appearance
+        panel.backgroundColor = .clear; panel.isOpaque = false; panel.hasShadow = true
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
-        let label = NSTextField(wrappingLabelWithString: message)
-        label.frame = NSRect(x: 16, y: 12, width: size.width - 32, height: size.height - 24)
-        label.font = .systemFont(ofSize: 14); panel.contentView?.addSubview(label)
+        let surface = NSVisualEffectView(frame: NSRect(origin: .zero, size: size))
+        surface.material = .popover; surface.blendingMode = .behindWindow; surface.state = .active
+        surface.wantsLayer = true; surface.layer?.cornerRadius = 14; surface.layer?.masksToBounds = true
+        hosting.frame = surface.bounds; hosting.autoresizingMask = [.width, .height]
+        surface.addSubview(hosting); panel.contentView = surface
+        let reduceMotion = NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+        panel.alphaValue = reduceMotion ? 1 : 0
         panel.orderFrontRegardless(); tip = panel
-        let dismiss = DispatchWorkItem { [weak self, weak panel] in panel?.close(); if self?.tip === panel { self?.tip = nil } }
+        if !reduceMotion {
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.14; panel.animator().alphaValue = 1
+            }
+        }
+        let dismiss = DispatchWorkItem { [weak self, weak panel] in
+            guard let panel else { return }
+            NSAnimationContext.runAnimationGroup({ context in
+                context.duration = reduceMotion ? 0 : 0.18
+                panel.animator().alphaValue = 0
+            }, completionHandler: { [weak self, weak panel] in
+                panel?.close(); if self?.tip === panel { self?.tip = nil }
+            })
+        }
         dismissTip = dismiss
-        DispatchQueue.main.asyncAfter(deadline: .now() + 4, execute: dismiss)
+        DispatchQueue.main.asyncAfter(deadline: .now() + (preview ? 8 : 4), execute: dismiss)
     }
 }
 

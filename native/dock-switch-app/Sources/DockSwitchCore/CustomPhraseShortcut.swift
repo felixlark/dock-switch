@@ -23,6 +23,7 @@ public struct CustomPhraseShortcut: Codable, Equatable {
     public static let changed = Notification.Name("me.longbiaochen.dock-switch.customPhraseChanged")
     public static let statusChanged = Notification.Name("me.longbiaochen.dock-switch.customPhraseStatusChanged")
     public static let recordingChanged = Notification.Name("me.longbiaochen.dock-switch.customPhraseRecordingChanged")
+    public static let previewRequested = Notification.Name("me.longbiaochen.dock-switch.customPhrasePreviewRequested")
     public static let componentFiles = ["encode.py", "wubi86.dict.yaml", "known-phrases.json",
         "db-candidate/append_phrase.py", "db-candidate/schema.json"]
 

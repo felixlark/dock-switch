@@ -36,9 +36,11 @@ change, or additional daemon is involved.
 Compatibility: targets the observed Codex 26.1023.51421 English AX labels.
 A standard chat header with `Chat toolbar` and either `Chat tabs` or a `New tab` button
 is required. Settings, archived-chat pages, full-view layouts without that header, and
-unknown/localized layouts are skipped. Toolbar identities distinguish equal titles and
-ignore renames as long as Codex preserves its view objects; AX is not a documented task
-identity API. A future Codex view remount or missing notification can require revalidation.
+unknown/localized layouts are skipped. Toolbar identities distinguish equal titles.
+Public shell/dialog notifications invalidate the baseline through Rename; the first
+recognized post-dialog view only seeds it, even if Rename remounts the toolbar.
+AX is not a documented task identity API. A future view remount or missing/late
+notification can require revalidation.
 Disable/remove this adapter when Codex provides a supported always-open workspace option.
 See [integration and acceptance notes](docs/codex-workspace.md).
 Run `node scripts/codex-workspace-status.js` for read-only subscription, trust, event and

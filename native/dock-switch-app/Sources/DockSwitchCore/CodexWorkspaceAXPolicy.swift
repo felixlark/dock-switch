@@ -1,5 +1,11 @@
 import Foundation
 
+enum CodexWorkspaceShell {
+    static func isPrimaryWebArea(role: String?, url: URL?) -> Bool {
+        role == "AXWebArea" && url?.scheme == "app" && url?.host == "-" && url?.path == "/index.html"
+    }
+}
+
 /// A failed AX read is different from a successfully scanned, absent control.
 enum CodexWorkspaceSearchResult<Element> {
     case found(Element)

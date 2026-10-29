@@ -2,6 +2,18 @@ import XCTest
 @testable import DockSwitchCore
 
 final class CodexWorkspaceAXPolicyTests: XCTestCase {
+    func testOnlyPrimaryShellValueChangesAreAccepted() {
+        let shell = URL(string: "app://-/index.html")!
+        XCTAssertTrue(CodexWorkspaceShell.isPrimaryWebArea(role: "AXWebArea", url: shell))
+        for role in ["AXTextField", "AXTextArea", "AXStaticText", "AXGroup"] {
+            XCTAssertFalse(CodexWorkspaceShell.isPrimaryWebArea(role: role, url: shell))
+        }
+        for url in ["https://example.com/index.html", "app://other/index.html", "app://-/browser.html"] {
+            XCTAssertFalse(CodexWorkspaceShell.isPrimaryWebArea(role: "AXWebArea", url: URL(string: url)))
+        }
+        XCTAssertFalse(CodexWorkspaceShell.isPrimaryWebArea(role: nil, url: shell))
+        XCTAssertFalse(CodexWorkspaceShell.isPrimaryWebArea(role: "AXWebArea", url: nil))
+    }
     private let nodes = [
         0: CodexWorkspaceScanNode(role: "AXGroup", label: "", children: [1, 2]),
         1: CodexWorkspaceScanNode(role: "AXTabGroup", label: "Chat tabs", children: []),

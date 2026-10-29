@@ -102,7 +102,7 @@ public final class CodexWorkspaceObserver {
     private func subscribeApplication() {
         guard let application else { return }
         for name in [kAXFocusedWindowChangedNotification, kAXWindowCreatedNotification,
-                     kAXFocusedUIElementChangedNotification, kAXTitleChangedNotification] {
+                     kAXFocusedUIElementChangedNotification, kAXTitleChangedNotification, kAXValueChangedNotification] {
             subscribe(application, name)
         }
     }
@@ -152,6 +152,13 @@ public final class CodexWorkspaceObserver {
     }
 
     private func received(_ element: AXUIElement, _ name: String) {
+        if name == kAXValueChangedNotification {
+            // Codex emits this on its shell when dialogs mount/unmount, including
+            // background OCU interaction. Never read AXValue or accept body/input
+            // events or nested browser web areas as a switch signal.
+            guard attribute(element, kAXRoleAttribute) as? String == "AXWebArea",
+                  CodexWorkspaceShell.isPrimaryWebArea(role: "AXWebArea", url: attribute(element, kAXURLAttribute) as? URL) else { return }
+        }
         if name == kAXUIElementDestroyedNotification, let dialog, CFEqual(dialog, element) {
             dialogDismissalCount += 1
             // The object is gone: compare only its saved opaque identity, never
@@ -312,7 +319,7 @@ public final class CodexWorkspaceObserver {
         }
         if role == "AXWebArea" {
             guard let url = attribute(element, kAXURLAttribute) as? URL else { return nil }
-            if url.scheme != "app" || url.host != "-" || url.path != "/index.html" {
+            if !CodexWorkspaceShell.isPrimaryWebArea(role: role, url: url) {
                 return CodexWorkspaceScanNode(role: role, label: "", children: [])
             }
         }

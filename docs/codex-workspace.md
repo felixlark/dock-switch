@@ -15,8 +15,10 @@ the runtime uses standard defaults for its own bundle ID, avoiding Foundation's 
 self-suite assertion. Preferences are outside the signed bundle.
 
 A top-level AXTitleChanged notification is only a rescan signal. Child title noise is
-ignored. Focused-window and focused-element notifications also trigger a rescan, covering
-same-title navigation when the application exposes a focus notification. A 150 ms trailing
+ignored. Focused-window and focused-element notifications also trigger a rescan. Public
+AXValueChanged from only the primary shell AXWebArea (`app://-/index.html`) also triggers
+one: live OCU proved Codex emits it for dialog mount/unmount without a native focus event.
+No AXValue is read; body/input events and nested web areas are rejected. A 150 ms trailing
 coalescing interval collapses duplicate notifications; this is a UI settling delay, not
 a limit on tasks, windows, or events. A two-second maintenance timer checks preferences,
 trust and process presence, without polling the AX tree. There are no new resource caps.
@@ -55,7 +57,7 @@ no chat titles or bodies.
 ## Verification record
 
 - Baseline: 102 Node tests, 43 Swift tests passed.
-- Candidate: `yarn test` passes 102 Node and 59 Swift tests. Added tests cover duplicate
+- Candidate: `yarn test` passes 102 Node and 60 Swift tests. Added tests cover duplicate
   events, open-pane idempotence, manual close, opaque identity vs rename/same-name cases,
   window transitions, restart baseline, and first open after starting outside a chat.
   Failure-injection tests cover unreadable tabs roles/ancestor children, subscription

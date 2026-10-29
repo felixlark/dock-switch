@@ -55,10 +55,16 @@ no chat titles or bodies.
 ## Verification record
 
 - Baseline: 102 Node tests, 43 Swift tests passed.
-- Candidate: `yarn test` passes 102 Node and 48 Swift tests. Added tests cover duplicate
+- Candidate: `yarn test` passes 102 Node and 55 Swift tests. Added tests cover duplicate
   events, open-pane idempotence, manual close, opaque identity vs rename/same-name cases,
   window transitions, restart baseline, and first open after starting outside a chat.
-  These are state-policy tests, not GUI evidence for AX object stability.
+  Failure-injection tests cover unreadable tabs roles/ancestor children, subscription
+  retry after transient AX failure, unsupported notifications, stale subscription release,
+  and the unnamed AXButton wrappers around Codex header controls.
+  Unknown reads suppress actions; only a complete scan can prove tabs absent. Lifecycle
+  maintenance retries transient subscription failures without restarting Codex; diagnostics
+  distinguish active, unsupported and retryable subscription counts.
+  These are state-policy/AX adapter tests, not GUI evidence for AX object stability.
 - Signed native build/install: performed using the existing Developer ID identity and
   installed launcher configuration. The previous installed bundle/config is retained
   outside the repository. Installation and policy verification are separate from acceptance.

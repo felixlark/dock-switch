@@ -7,7 +7,7 @@ public final class CodexWorkspaceObserver {
     private var observer: AXObserver?
     private var application: AXUIElement?
     private var pid: pid_t?
-    private var subscriptions: [(AXUIElement, String)] = []
+    private var subscriptions = CodexWorkspaceSubscriptions<AXIdentity>()
     private var workspaceTokens: [NSObjectProtocol] = []
     private var maintenance: Timer?
     private var pending: DispatchWorkItem?
@@ -22,7 +22,10 @@ public final class CodexWorkspaceObserver {
 
     public func status() -> [String: Any] {
         var result: [String: Any] = ["enabled": CodexWorkspacePreference.enabled,
-            "accessibilityTrusted": AXIsProcessTrusted(), "observing": observer != nil,
+            "accessibilityTrusted": AXIsProcessTrusted(), "observing": observer != nil && subscriptions.activeCount > 0,
+            "activeSubscriptions": subscriptions.activeCount,
+            "unsupportedSubscriptions": subscriptions.unsupportedCount,
+            "retryableSubscriptions": subscriptions.retryableCount,
             "events": eventCount, "pressCount": pressCount]
         if let pid { result["targetPID"] = pid }
         if let lastPressResult { result["lastPressResult"] = lastPressResult }
@@ -55,7 +58,11 @@ public final class CodexWorkspaceObserver {
         guard CodexWorkspacePreference.enabled, AXIsProcessTrusted(),
               let app = NSRunningApplication.runningApplications(withBundleIdentifier: "com.openai.codex").first,
               !app.isTerminated else { detach(); return }
-        guard pid != app.processIdentifier else { return }
+        if pid == app.processIdentifier {
+            subscribeApplication()
+            subscribeWindows()
+            return
+        }
         detach()
         let element = AXUIElementCreateApplication(app.processIdentifier)
         var created: AXObserver?
@@ -71,37 +78,48 @@ public final class CodexWorkspaceObserver {
         pid = app.processIdentifier
         application = element
         observer = created
-        for name in [kAXFocusedWindowChangedNotification, kAXWindowCreatedNotification,
-                     kAXFocusedUIElementChangedNotification, kAXTitleChangedNotification] {
-            subscribe(element, name)
-        }
+        subscribeApplication()
         subscribeWindows()
         CFRunLoopAddSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(created), .commonModes)
         // Seed existing view; enabling/restarting never reopens a manually closed pane.
-        if let sample = snapshot() {
+        switch snapshot() {
+        case .chat(let sample):
             _ = tracker.observe(window: AXIdentity(sample.window), chat: AXIdentity(sample.toolbar), workspaceOpen: sample.open)
-        } else {
-            tracker.startOutsideChat()
+        case .outside: tracker.startOutsideChat()
+        case .unknown: tracker.reset()
         }
         NSLog("dock-switch: Codex workspace observer attached")
     }
 
+    private func subscribeApplication() {
+        guard let application else { return }
+        for name in [kAXFocusedWindowChangedNotification, kAXWindowCreatedNotification,
+                     kAXFocusedUIElementChangedNotification, kAXTitleChangedNotification] {
+            subscribe(application, name)
+        }
+    }
+
     private func subscribe(_ element: AXUIElement, _ name: String) {
-        guard let observer, !subscriptions.contains(where: { CFEqual($0.0, element) && $0.1 == name }) else { return }
-        let result = AXObserverAddNotification(observer, element, name as CFString, Unmanaged.passUnretained(self).toOpaque())
-        if result == .success { subscriptions.append((element, name)) }
+        guard let observer else { return }
+        subscriptions.ensure(element: AXIdentity(element), notification: name) {
+            let result = AXObserverAddNotification(observer, element, name as CFString, Unmanaged.passUnretained(self).toOpaque())
+            switch result {
+            case .success, .notificationAlreadyRegistered: return .active
+            case .notificationUnsupported: return .unsupported
+            default: return .retryable(result.rawValue)
+            }
+        }
     }
 
     private func subscribeWindows() {
-        guard let application, let windows = attribute(application, kAXWindowsAttribute) as? [AXUIElement] else { return }
-        // Remove stale window subscriptions without retaining every historical window.
-        if let observer {
-            subscriptions.removeAll { entry in
-                guard !CFEqual(entry.0, application), !windows.contains(where: { CFEqual($0, entry.0) }) else { return false }
-                AXObserverRemoveNotification(observer, entry.0, entry.1 as CFString)
-                return true
-            }
-        }
+        guard let application, let windows = attribute(application, kAXWindowsAttribute) as? [AXUIElement],
+              let observer else { return }
+        // A failed window-list read preserves subscriptions for the next maintenance tick.
+        subscriptions.remove(where: { entry in
+            !CFEqual(entry.element.element, application) && !windows.contains(where: { CFEqual($0, entry.element.element) })
+        }, unregister: { entry in
+            AXObserverRemoveNotification(observer, entry.element.element, entry.notification as CFString)
+        })
         for window in windows { subscribe(window, kAXTitleChangedNotification) }
     }
 
@@ -110,10 +128,12 @@ public final class CodexWorkspaceObserver {
         pending?.cancel()
         pending = nil
         if let observer {
-            for (element, name) in subscriptions { AXObserverRemoveNotification(observer, element, name as CFString) }
+            subscriptions.remove(where: { _ in true }, unregister: { entry in
+                AXObserverRemoveNotification(observer, entry.element.element, entry.notification as CFString)
+            })
             CFRunLoopRemoveSource(CFRunLoopGetMain(), AXObserverGetRunLoopSource(observer), .commonModes)
         }
-        subscriptions.removeAll()
+        subscriptions = CodexWorkspaceSubscriptions()
         observer = nil
         application = nil
         pid = nil
@@ -140,12 +160,12 @@ public final class CodexWorkspaceObserver {
     }
 
     private func inspect() {
-        guard CodexWorkspacePreference.enabled, AXIsProcessTrusted(), let sample = snapshot() else { return }
+        guard CodexWorkspacePreference.enabled, AXIsProcessTrusted(), case .chat(let sample) = snapshot() else { return }
         guard tracker.observe(window: AXIdentity(sample.window), chat: AXIdentity(sample.toolbar), workspaceOpen: sample.open),
               let button = sample.newTab else { return }
         // Re-read immediately before AXPress: no cached button on a newly navigated
         // chat/window, no activation, no retries after an unknown action result.
-        guard let current = snapshot(), CFEqual(current.window, sample.window),
+        guard case .chat(let current) = snapshot(), CFEqual(current.window, sample.window),
               CFEqual(current.toolbar, sample.toolbar), !current.open,
               let currentButton = current.newTab, CFEqual(currentButton, button),
               attribute(currentButton, kAXEnabledAttribute) as? Bool == true,
@@ -163,44 +183,83 @@ public final class CodexWorkspaceObserver {
         let newTab: AXUIElement?
     }
 
-    private func snapshot() -> Sample? {
+    private enum Snapshot {
+        case chat(Sample)
+        case outside
+        case unknown
+    }
+
+    private func snapshot() -> Snapshot {
         guard pid != nil, let application, let window = elementAttribute(application, kAXFocusedWindowAttribute),
               attribute(window, kAXSubroleAttribute) as? String == kAXStandardWindowSubrole,
-              attribute(window, kAXMinimizedAttribute) as? Bool == false,
-              (attribute(window, "AXSheets") as? [AXUIElement] ?? []).isEmpty,
-              let toolbar = find(in: window, matching: { role, label in role == kAXToolbarRole && label == "Chat toolbar" }),
-              let header = elementAttribute(toolbar, kAXParentAttribute) else { return nil }
+              attribute(window, kAXMinimizedAttribute) as? Bool == false else { return .unknown }
+        switch readAttribute(window, "AXSheets") {
+        case .value(let value):
+            guard let sheets = value as? [AXUIElement], sheets.isEmpty else { return .unknown }
+        case .absent: break
+        case .failed: return .unknown
+        }
+        let toolbar: AXUIElement
+        switch find(in: window, matching: { role, label in role == kAXToolbarRole && label == "Chat toolbar" }) {
+        case .found(let element): toolbar = element
+        case .absent: return .outside
+        case .unknown: return .unknown
+        }
+        guard let header = elementAttribute(toolbar, kAXParentAttribute) else { return .unknown }
         let tabs = find(in: header, matching: { role, label in role == kAXTabGroupRole && label == "Chat tabs" })
-        let button = find(in: header, matching: { role, label in role == kAXButtonRole && label == "New tab" })
-        guard tabs != nil || button != nil else { return nil }
-        return Sample(window: window, toolbar: toolbar, open: tabs != nil, newTab: button)
+        switch tabs {
+        case .found: return .chat(Sample(window: window, toolbar: toolbar, open: true, newTab: nil))
+        case .unknown: return .unknown
+        case .absent:
+            guard case .found(let button) = find(in: header, matching: { role, label in role == kAXButtonRole && label == "New tab" }) else { return .unknown }
+            return .chat(Sample(window: window, toolbar: toolbar, open: false, newTab: button))
+        }
     }
 
     /// Structural/header traversal only. Never enter the conversation, composer,
     /// sidebar lists, browser web content, or read AXValue/selected text.
-    private func find(in root: AXUIElement, matching: (String, String) -> Bool) -> AXUIElement? {
-        var queue = [root]
-        var visited = Set<AXIdentity>()
-        var index = 0
-        while index < queue.count {
-            let element = queue[index]
-            index += 1
-            guard visited.insert(AXIdentity(element)).inserted else { continue }
-            let role = attribute(element, kAXRoleAttribute) as? String ?? ""
-            guard ![kAXStaticTextRole, kAXTextAreaRole, kAXTextFieldRole].contains(role) else { continue }
-            if role == "AXWebArea" {
-                guard let url = attribute(element, kAXURLAttribute) as? URL,
-                      url.scheme == "app", url.host == "-", url.path == "/index.html" else { continue }
+    private func find(in root: AXUIElement, matching: (String, String) -> Bool) -> CodexWorkspaceSearchResult<AXUIElement> {
+        let result = CodexWorkspaceTreeSearch.find(root: AXIdentity(root), read: { identity in
+            let element = identity.element
+            guard let role = attribute(element, kAXRoleAttribute) as? String else { return nil }
+            if [kAXStaticTextRole, kAXTextAreaRole, kAXTextFieldRole].contains(role) {
+                return CodexWorkspaceScanNode(role: role, label: "", children: [])
             }
-            let label = (attribute(element, kAXTitleAttribute) as? String).flatMap { $0.isEmpty ? nil : $0 }
-                ?? attribute(element, kAXDescriptionAttribute) as? String ?? ""
-            if matching(role, label) { return element }
-            if ["Conversation", "Latest response", "Navigation", "App navigation"].contains(label) { continue }
-            if [kAXButtonRole, kAXCheckBoxRole, kAXPopUpButtonRole, kAXListRole, "AXOutline", "AXTable", "AXComboBox", "AXLink", kAXTabGroupRole, kAXToolbarRole].contains(role) { continue }
-            queue += attribute(element, kAXChildrenAttribute) as? [AXUIElement] ?? []
+            if role == "AXWebArea" {
+                guard let url = attribute(element, kAXURLAttribute) as? URL else { return nil }
+                if url.scheme != "app" || url.host != "-" || url.path != "/index.html" {
+                    return CodexWorkspaceScanNode(role: role, label: "", children: [])
+                }
+            }
+            var label = ""
+            for key in [kAXTitleAttribute, kAXDescriptionAttribute] {
+                switch readAttribute(element, key) {
+                case .value(let value):
+                    guard let text = value as? String else { return nil }
+                    if !text.isEmpty { label = text }
+                case .absent: break
+                case .failed: return nil
+                }
+                if !label.isEmpty { break }
+            }
+            if CodexWorkspaceTreeSearch.prunesChildren(role: role, label: label) {
+                return CodexWorkspaceScanNode(role: role, label: label, children: [])
+            }
+            let children: [AXIdentity]?
+            switch readAttribute(element, kAXChildrenAttribute) {
+            case .value(let value): children = (value as? [AXUIElement])?.map(AXIdentity.init)
+            case .absent: children = []
+            case .failed: children = nil
+            }
+            return CodexWorkspaceScanNode(role: role, label: label, children: children)
+        }, matching: matching)
+        switch result {
+        case .found(let identity): return .found(identity.element)
+        case .absent: return .absent
+        case .unknown: return .unknown
         }
-        return nil
     }
+
 }
 
 private struct AXIdentity: Hashable {
@@ -210,9 +269,25 @@ private struct AXIdentity: Hashable {
     func hash(into hasher: inout Hasher) { hasher.combine(CFHash(element)) }
 }
 
-private func attribute(_ element: AXUIElement, _ key: String) -> CFTypeRef? {
+private enum AXAttributeRead {
+    case value(CFTypeRef)
+    case absent
+    case failed
+}
+
+private func readAttribute(_ element: AXUIElement, _ key: String) -> AXAttributeRead {
     var value: CFTypeRef?
-    guard AXUIElementCopyAttributeValue(element, key as CFString, &value) == .success else { return nil }
+    let result = AXUIElementCopyAttributeValue(element, key as CFString, &value)
+    switch result {
+    case .success:
+        return value.map(AXAttributeRead.value) ?? .failed
+    case .attributeUnsupported, .noValue: return .absent
+    default: return .failed
+    }
+}
+
+private func attribute(_ element: AXUIElement, _ key: String) -> CFTypeRef? {
+    guard case .value(let value) = readAttribute(element, key) else { return nil }
     return value
 }
 

@@ -2,12 +2,15 @@ import SwiftUI
 
 struct SettingsRootView: View {
     @EnvironmentObject private var store: SettingsStore
+    @State private var selectedPage: String? = "launcher"
 
     var body: some View {
         NavigationSplitView {
-            List(selection: .constant("launcher")) {
+            List(selection: $selectedPage) {
                 Label("启动默认值", systemImage: "command")
                     .tag("launcher")
+                Label("自定义短语", systemImage: "text.badge.plus")
+                    .tag("phrases")
                 Label("显示器", systemImage: "display")
                     .foregroundStyle(.secondary)
                 Label("高级", systemImage: "slider.horizontal.3")
@@ -15,6 +18,9 @@ struct SettingsRootView: View {
             }
             .navigationSplitViewColumnWidth(min: 180, ideal: 210, max: 240)
         } detail: {
+            if selectedPage == "phrases" {
+                phrasePage
+            } else {
             VStack(spacing: 0) {
                 header
                 Divider()
@@ -22,7 +28,45 @@ struct SettingsRootView: View {
                 Divider()
                 footer
             }
+            }
         }
+    }
+
+    private var phrasePage: some View {
+        VStack(alignment: .leading, spacing: 22) {
+            Text("自定义短语").font(.largeTitle.weight(.semibold))
+            Text("选中中文词组，按快捷键自动计算五笔码并加入文本替换。")
+                .foregroundStyle(.secondary)
+            Divider()
+            Toggle("启用选词加入短语", isOn: $store.phraseEnabled)
+            HStack {
+                Text("全局快捷键")
+                Spacer()
+                PhraseShortcutRecorder(shortcut: store.phraseShortcut) { store.phraseShortcut = $0 }
+                    .frame(width: 180, height: 32)
+                Button("恢复默认") { store.phraseShortcut = .default }
+            }
+            Text("点击快捷键后按下新的组合键，再点“应用”。默认 ⌘⇧`（数字 1 左侧的反引号键）。")
+                .font(.callout).foregroundStyle(.secondary)
+            Text(store.phraseStatus).accessibilityIdentifier("customPhraseStatus")
+            Divider()
+            Label(store.phraseComponentInstalled ? "本机五笔短语组件已就绪" : "尚未安装本机五笔短语组件",
+                systemImage: store.phraseComponentInstalled ? "checkmark.circle" : "exclamationmark.triangle")
+            Text("写入前自动备份，保留已有短语；同码词需确认后追加。成功后显示浮层提示。若新增短语暂未出词，请重开使用它的应用。")
+                .foregroundStyle(.secondary)
+            if !store.phraseComponentInstalled {
+                Text("此功能需要本机已配置的五笔编码与短语备份组件。安装位置：~/Library/Application Support/wubi-phrase。")
+                    .font(.callout).foregroundStyle(.secondary).textSelection(.enabled)
+            }
+            Spacer()
+            HStack {
+                Button("刷新状态") { store.loadPhraseSettings() }
+                Spacer()
+                Button("应用") { store.savePhraseSettings() }
+                    .buttonStyle(.borderedProminent)
+            }
+        }
+        .padding(28)
     }
 
     private var header: some View {

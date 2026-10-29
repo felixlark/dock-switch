@@ -21,6 +21,7 @@ swiftc \
   -framework SwiftUI \
   -framework AppKit \
   "$SOURCE_DIR"/*.swift \
+  "$ROOT_DIR/native/dock-switch-app/Sources/DockSwitchCore/CustomPhraseShortcut.swift" \
   -o "$MACOS_DIR/DockSwitchSettings"
 
 cat > "$CONTENTS_DIR/Info.plist" <<'PLIST'

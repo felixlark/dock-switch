@@ -206,13 +206,27 @@ public final class CodexWorkspaceObserver {
         case .unknown: return .unknown
         }
         guard let header = elementAttribute(toolbar, kAXParentAttribute) else { return .unknown }
-        let tabs = find(in: header, matching: { role, label in role == kAXTabGroupRole && label == "Chat tabs" })
-        switch tabs {
-        case .found: return .chat(Sample(window: window, toolbar: toolbar, open: true, newTab: nil))
-        case .unknown: return .unknown
-        case .absent:
-            guard case .found(let button) = find(in: header, matching: { role, label in role == kAXButtonRole && label == "New tab" }) else { return .unknown }
-            return .chat(Sample(window: window, toolbar: toolbar, open: false, newTab: button))
+        let state = CodexWorkspaceHeaderSearch.nearest(startingAt: AXIdentity(header), parent: { identity in
+            elementAttribute(identity.element, kAXParentAttribute).map(AXIdentity.init)
+        }, inspect: { identity -> CodexWorkspaceHeaderState<AXIdentity> in
+            let group = identity.element
+            // Do not ascend into the shell/web content or cross a failed role read.
+            guard attribute(group, kAXRoleAttribute) as? String == kAXGroupRole else { return .unknown }
+            switch find(in: group, matching: { role, label in role == kAXTabGroupRole && label == "Chat tabs" }) {
+            case .found: return .open
+            case .unknown: return .unknown
+            case .absent:
+                switch find(in: group, matching: { role, label in role == kAXButtonRole && label == "New tab" }) {
+                case .found(let button): return .closed(AXIdentity(button))
+                case .absent: return .absent
+                case .unknown: return .unknown
+                }
+            }
+        })
+        switch state {
+        case .open: return .chat(Sample(window: window, toolbar: toolbar, open: true, newTab: nil))
+        case .closed(let button): return .chat(Sample(window: window, toolbar: toolbar, open: false, newTab: button.element))
+        case .absent, .unknown: return .unknown
         }
     }
 

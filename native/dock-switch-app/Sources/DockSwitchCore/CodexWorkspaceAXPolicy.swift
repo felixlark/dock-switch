@@ -74,3 +74,34 @@ struct CodexWorkspaceSubscriptions<Element: Hashable> {
         outcomes.values.filter { if case .retryable = $0 { return true }; return false }.count
     }
 }
+
+/// Public AX exposes wrapper groups that a rendered accessibility tree may flatten.
+/// Walk to the nearest group containing workspace controls, never past an unknown
+/// state or the app-shell boundary supplied by inspect.
+enum CodexWorkspaceHeaderState<Element> {
+    case open
+    case closed(Element)
+    case absent
+    case unknown
+}
+
+enum CodexWorkspaceHeaderSearch {
+    static func nearest<Element: Hashable>(
+        startingAt start: Element,
+        parent: (Element) -> Element?,
+        inspect: (Element) -> CodexWorkspaceHeaderState<Element>
+    ) -> CodexWorkspaceHeaderState<Element> {
+        var current = start
+        var visited = Set<Element>()
+        while visited.insert(current).inserted {
+            let state = inspect(current)
+            switch state {
+            case .absent:
+                guard let next = parent(current) else { return .unknown }
+                current = next
+            default: return state
+            }
+        }
+        return .unknown
+    }
+}

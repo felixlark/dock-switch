@@ -43,6 +43,28 @@ final class CodexWorkspaceAXPolicyTests: XCTestCase {
         XCTAssertTrue(CodexWorkspaceTreeSearch.prunesChildren(role: "AXTextArea", label: ""))
     }
 
+    func testHeaderControlsOutsideNestedToolbarWrappers() {
+        var inspected: [Int] = []
+        let result = CodexWorkspaceHeaderSearch.nearest(startingAt: 1, parent: { $0 + 1 }, inspect: { node -> CodexWorkspaceHeaderState<Int> in
+            inspected.append(node)
+            return node == 4 ? .closed(99) : .absent
+        })
+        guard case .closed(99) = result else { return XCTFail("must find outer header controls") }
+        XCTAssertEqual(inspected, [1, 2, 3, 4], "do not search beyond the nearest header")
+    }
+
+    func testHeaderUnknownBoundaryAndParentCycleFailClosed() {
+        var inspected: [Int] = []
+        let unknown = CodexWorkspaceHeaderSearch.nearest(startingAt: 1, parent: { $0 + 1 }, inspect: { node -> CodexWorkspaceHeaderState<Int> in
+            inspected.append(node)
+            return node == 3 ? .unknown : .absent
+        })
+        guard case .unknown = unknown else { return XCTFail("shell boundary or read failure must stop traversal") }
+        XCTAssertEqual(inspected, [1, 2, 3])
+        let cycle = CodexWorkspaceHeaderSearch.nearest(startingAt: 1, parent: { $0 }, inspect: { _ -> CodexWorkspaceHeaderState<Int> in .absent })
+        guard case .unknown = cycle else { return XCTFail("AX parent cycles must not loop") }
+    }
+
     func testTransientSubscriptionFailureRecoversWithoutRestart() {
         var subscriptions = CodexWorkspaceSubscriptions<Int>()
         var calls = 0

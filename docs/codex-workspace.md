@@ -55,12 +55,13 @@ no chat titles or bodies.
 ## Verification record
 
 - Baseline: 102 Node tests, 43 Swift tests passed.
-- Candidate: `yarn test` passes 102 Node and 55 Swift tests. Added tests cover duplicate
+- Candidate: `yarn test` passes 102 Node and 57 Swift tests. Added tests cover duplicate
   events, open-pane idempotence, manual close, opaque identity vs rename/same-name cases,
   window transitions, restart baseline, and first open after starting outside a chat.
   Failure-injection tests cover unreadable tabs roles/ancestor children, subscription
   retry after transient AX failure, unsupported notifications, stale subscription release,
-  and the unnamed AXButton wrappers around Codex header controls.
+  the unnamed AXButton wrappers around Codex header controls, and nested toolbar ancestor
+  groups/shell-boundary/cycle handling.
   Unknown reads suppress actions; only a complete scan can prove tabs absent. Lifecycle
   maintenance retries transient subscription failures without restarting Codex; diagnostics
   distinguish active, unsupported and retryable subscription counts.
@@ -77,9 +78,29 @@ no chat titles or bodies.
   use the app 'com.openai.codex' for safety reasons.` No alternative GUI controller was
   used against Codex after this explicit denial. No asar or TCC modification was made.
 
-The PR remains Draft. Final candidate acceptance is **blocked**, not passed: closed-pane
-switch/reopen, open-pane tab-count stability, Cmd+T, same-name/rename behavior, rapid
-switching, multiple windows, and Codex restart need visible interaction on the final
-installed candidate after the official control plane permits the app. This is a tool
-policy boundary, not evidence that the user must change macOS permissions. The installed
-adapter is left disabled while this acceptance is outstanding.
+## OCU continuation
+
+The user subsequently specified Open Computer Use (OCU) for Codex itself. OCU successfully
+read and interacted with Codex; the earlier unified CUA refusal does not describe OCU's
+current capability. No security policy or macOS permission was changed.
+
+Live OCU acceptance exposed a real failure in b0cae31: the pane stayed closed after a
+round trip and the runtime recorded events but zero presses. The rendered AX tree flattened
+several unnamed ancestors. The true toolbar parent contained only the toolbar, so searching
+only that immediate parent could never find the workspace controls. The adapter now climbs
+to the nearest AXGroup with recognized controls; it stops at an unknown read, parent cycle,
+or non-group shell boundary rather than searching arbitrary app content. Added tests cover
+these actual wrapper relationships and boundaries.
+
+On the repaired installed code, OCU hid the workspace, switched to another existing chat,
+and switched back. The workspace visibly reopened and runtime AXPress returned success.
+Four further switches between the same two open chats retained one tab per chat and left
+pressCount unchanged. Screenshots and read-only counters are retained in the local issue49
+log/evidence directory. Cmd+T was also visibly verified as New tab (URL entry focused), not
+New Page, during the OCU continuation.
+
+The PR remains Draft and is not merged. Remaining extended GUI cases and the final
+candidate-bound review/readback are tracked in the original Issue/PR; tests of opaque
+identity do not alone prove rename/same-name stability on future Codex versions. A live
+Codex restart must preserve other active chats rather than interrupt them merely to obtain
+a test result. The adapter's on/off lifecycle can be tested without restarting Codex.

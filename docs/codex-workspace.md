@@ -55,7 +55,7 @@ no chat titles or bodies.
 ## Verification record
 
 - Baseline: 102 Node tests, 43 Swift tests passed.
-- Candidate: `yarn test` passes 102 Node and 58 Swift tests. Added tests cover duplicate
+- Candidate: `yarn test` passes 102 Node and 59 Swift tests. Added tests cover duplicate
   events, open-pane idempotence, manual close, opaque identity vs rename/same-name cases,
   window transitions, restart baseline, and first open after starting outside a chat.
   Failure-injection tests cover unreadable tabs roles/ancestor children, subscription
@@ -103,8 +103,16 @@ An extended OCU rename test then exposed a second boundary: a Chromium rename di
 changes the exposed toolbar identity even though the chat has not changed. Its public AX
 role is AXGroup with subrole AXApplicationDialog; AXModal was false, so the native-sheet
 check alone was insufficient. Snapshot collection now explicitly scans for public dialog
-subroles before considering a chat view and does not update the switch baseline through a
-dialog or incomplete read. A regression test covers a dialog alongside a background toolbar.
+subroles before considering a chat view. Because Save permanently replaces that identity,
+observing a dialog invalidates the old baseline. The first recognized post-dialog view only
+seeds it. A targeted public AXUIElementDestroyed subscription on the observed dialog feeds
+the same notification-coalescing path, so dismissal can seed before the next actual switch;
+it is retained separately from window-list cleanup and removed on recovery/detach. Existing
+notifications can also resume seeding. Unsupported/missing notifications or incomplete AX
+reads remain fail-closed: if no usable post-dialog event arrives, the next recognized view
+seeds without opening. No AX-tree polling is introduced. Tests cover dialog detection and
+baseline invalidation with a permanently replaced toolbar; installed notification delivery
+still requires visible verification.
 
 The PR remains Draft and is not merged. Remaining extended GUI cases and the final
 candidate-bound review/readback are tracked in the original Issue/PR; tests of opaque

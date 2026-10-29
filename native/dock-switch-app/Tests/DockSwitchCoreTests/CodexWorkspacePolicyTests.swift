@@ -18,13 +18,27 @@ final class CodexWorkspacePolicyTests: XCTestCase {
         XCTAssertTrue(tracker.observe(window: 1, chat: 10, workspaceOpen: false))
     }
 
-    func testIdentityNotTitleHandlesRenameAndSameNameChats() {
+    func testIdentityNotTitleHandlesUnchangedViewAndSameNameChats() {
         var tracker = CodexWorkspaceSwitchTracker<String>()
         _ = tracker.observe(window: "w", chat: "toolbar-a", workspaceOpen: false)
-        // Rename/streaming title noise does not replace the view identity.
+        // Title noise with an unchanged view must not trigger a press.
         XCTAssertFalse(tracker.observe(window: "w", chat: "toolbar-a", workspaceOpen: false))
         // Different views can have identical human-readable titles.
         XCTAssertTrue(tracker.observe(window: "w", chat: "toolbar-b", workspaceOpen: false))
+    }
+
+    func testDialogCompletionReseedsReplacedToolbarBeforeNextRealSwitch() {
+        var tracker = CodexWorkspaceSwitchTracker<String>()
+        _ = tracker.observe(window: "w", chat: "before-dialog", workspaceOpen: false)
+        tracker.reset() // Public dialog detected; unknown reads leave this state intact.
+        // Saving Rename permanently remounts the same chat's toolbar.
+        XCTAssertFalse(tracker.observe(window: "w", chat: "after-save", workspaceOpen: false))
+        XCTAssertFalse(tracker.observe(window: "w", chat: "after-save", workspaceOpen: false))
+        XCTAssertTrue(tracker.observe(window: "w", chat: "other-chat", workspaceOpen: false))
+        tracker.reset()
+        // Cancel may restore the same toolbar; it also seeds without opening.
+        XCTAssertFalse(tracker.observe(window: "w", chat: "other-chat", workspaceOpen: false))
+        XCTAssertTrue(tracker.observe(window: "w", chat: "after-save", workspaceOpen: false))
     }
 
     func testFirstOpenAfterStartingOutsideChat() {

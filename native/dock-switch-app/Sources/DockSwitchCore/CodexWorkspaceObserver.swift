@@ -7,12 +7,14 @@ public final class CodexWorkspaceObserver {
     private var observer: AXObserver?
     private var application: AXUIElement?
     private var pid: pid_t?
+    private var dialog: AXUIElement?
     private var subscriptions = CodexWorkspaceSubscriptions<AXIdentity>()
     private var workspaceTokens: [NSObjectProtocol] = []
     private var maintenance: Timer?
     private var pending: DispatchWorkItem?
     private var generation = 0
     private var eventCount = 0
+    private var dialogDismissalCount = 0
     private var pressCount = 0
     private var lastPressResult: Int32?
     private var tracker = CodexWorkspaceSwitchTracker<AXIdentity>()
@@ -26,7 +28,9 @@ public final class CodexWorkspaceObserver {
             "activeSubscriptions": subscriptions.activeCount,
             "unsupportedSubscriptions": subscriptions.unsupportedCount,
             "retryableSubscriptions": subscriptions.retryableCount,
-            "events": eventCount, "pressCount": pressCount]
+            "events": eventCount, "pressCount": pressCount,
+            "dialogObserved": dialog != nil, "dialogDismissalEvents": dialogDismissalCount,
+            "recognizedViewSeeded": tracker.hasRecognizedChat]
         if let pid { result["targetPID"] = pid }
         if let lastPressResult { result["lastPressResult"] = lastPressResult }
         return result
@@ -61,6 +65,7 @@ public final class CodexWorkspaceObserver {
         if pid == app.processIdentifier {
             subscribeApplication()
             subscribeWindows()
+            if let dialog { subscribe(dialog, kAXUIElementDestroyedNotification) }
             return
         }
         detach()
@@ -86,6 +91,9 @@ public final class CodexWorkspaceObserver {
         case .chat(let sample):
             _ = tracker.observe(window: AXIdentity(sample.window), chat: AXIdentity(sample.toolbar), workspaceOpen: sample.open)
         case .outside: tracker.startOutsideChat()
+        case .modal(let element):
+            tracker.reset()
+            watchDialog(element)
         case .unknown: tracker.reset()
         }
         NSLog("dock-switch: Codex workspace observer attached")
@@ -116,7 +124,9 @@ public final class CodexWorkspaceObserver {
               let observer else { return }
         // A failed window-list read preserves subscriptions for the next maintenance tick.
         subscriptions.remove(where: { entry in
-            !CFEqual(entry.element.element, application) && !windows.contains(where: { CFEqual($0, entry.element.element) })
+            !CFEqual(entry.element.element, application) &&
+                !(dialog.map { CFEqual($0, entry.element.element) } ?? false) &&
+                !windows.contains(where: { CFEqual($0, entry.element.element) })
         }, unregister: { entry in
             AXObserverRemoveNotification(observer, entry.element.element, entry.notification as CFString)
         })
@@ -137,10 +147,18 @@ public final class CodexWorkspaceObserver {
         observer = nil
         application = nil
         pid = nil
+        dialog = nil
         tracker.reset()
     }
 
     private func received(_ element: AXUIElement, _ name: String) {
+        if name == kAXUIElementDestroyedNotification, let dialog, CFEqual(dialog, element) {
+            dialogDismissalCount += 1
+            // The object is gone: compare only its saved opaque identity, never
+            // read its attributes. Existing notifications can also resume seeding.
+            clearDialog()
+            tracker.reset()
+        }
         if name == kAXTitleChangedNotification {
             guard attribute(element, kAXRoleAttribute) as? String == kAXWindowRole else { return }
         }
@@ -160,12 +178,12 @@ public final class CodexWorkspaceObserver {
     }
 
     private func inspect() {
-        guard CodexWorkspacePreference.enabled, AXIsProcessTrusted(), case .chat(let sample) = snapshot() else { return }
+        guard CodexWorkspacePreference.enabled, AXIsProcessTrusted(), let sample = sampleForInspection() else { return }
         guard tracker.observe(window: AXIdentity(sample.window), chat: AXIdentity(sample.toolbar), workspaceOpen: sample.open),
               let button = sample.newTab else { return }
         // Re-read immediately before AXPress: no cached button on a newly navigated
         // chat/window, no activation, no retries after an unknown action result.
-        guard case .chat(let current) = snapshot(), CFEqual(current.window, sample.window),
+        guard let current = sampleForInspection(), CFEqual(current.window, sample.window),
               CFEqual(current.toolbar, sample.toolbar), !current.open,
               let currentButton = current.newTab, CFEqual(currentButton, button),
               attribute(currentButton, kAXEnabledAttribute) as? Bool == true,
@@ -174,6 +192,40 @@ public final class CodexWorkspaceObserver {
         pressCount += 1
         lastPressResult = result.rawValue
         NSLog("dock-switch: Codex workspace AXPress result=%d", result.rawValue)
+    }
+
+    private func watchDialog(_ element: AXUIElement) {
+        if let dialog, !CFEqual(dialog, element) { clearDialog() }
+        dialog = element
+        subscribe(element, kAXUIElementDestroyedNotification)
+    }
+
+    private func clearDialog() {
+        guard let dialog else { return }
+        if let observer {
+            subscriptions.remove(where: { CFEqual($0.element.element, dialog) }, unregister: { entry in
+                AXObserverRemoveNotification(observer, entry.element.element, entry.notification as CFString)
+            })
+        }
+        self.dialog = nil
+    }
+
+    private func sampleForInspection() -> Sample? {
+        switch snapshot() {
+        case .chat(let sample):
+            clearDialog()
+            return sample
+        case .modal(let element):
+            // Rename can permanently replace the toolbar AX identity. Its first
+            // recognized successor must seed a fresh baseline, not count as a switch.
+            tracker.reset()
+            watchDialog(element)
+            return nil
+        case .outside:
+            clearDialog()
+            return nil
+        case .unknown: return nil
+        }
     }
 
     private struct Sample {
@@ -186,6 +238,7 @@ public final class CodexWorkspaceObserver {
     private enum Snapshot {
         case chat(Sample)
         case outside
+        case modal(AXUIElement)
         case unknown
     }
 
@@ -195,17 +248,19 @@ public final class CodexWorkspaceObserver {
               attribute(window, kAXMinimizedAttribute) as? Bool == false else { return .unknown }
         switch readAttribute(window, "AXSheets") {
         case .value(let value):
-            guard let sheets = value as? [AXUIElement], sheets.isEmpty else { return .unknown }
+            guard let sheets = value as? [AXUIElement] else { return .unknown }
+            if let sheet = sheets.first { return .modal(sheet) }
         case .absent: break
         case .failed: return .unknown
         }
         // Chromium modal dialogs can replace the exposed toolbar identity while
-        // retaining the same chat. Do not seed/update the switch tracker through one.
+        // retaining the same chat. Invalidate that baseline through the dialog.
         switch CodexWorkspaceTreeSearch.findNode(root: AXIdentity(window), read: readNode, matching: {
             $0.subrole == "AXApplicationDialog" || ["AXDialog", "AXSheet"].contains($0.role)
         }) {
         case .absent: break
-        case .found, .unknown: return .unknown
+        case .found(let identity): return .modal(identity.element)
+        case .unknown: return .unknown
         }
         let toolbar: AXUIElement
         switch find(in: window, matching: { role, label in role == kAXToolbarRole && label == "Chat toolbar" }) {

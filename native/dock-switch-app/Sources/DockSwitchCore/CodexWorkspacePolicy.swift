@@ -1,11 +1,12 @@
 import Foundation
 
-/// Titles are deliberately not task identities. AX toolbar objects survive a rename,
-/// but are replaced when the installed Codex chat view changes.
+/// Titles are deliberately not task identities. AX toolbar identities distinguish
+/// mounted views; dialogs invalidate the baseline because rename may remount one.
 public struct CodexWorkspaceSwitchTracker<Identity: Equatable> {
     private var previous: (window: Identity, chat: Identity)?
     private var hasBaseline = false
     public init() {}
+    var hasRecognizedChat: Bool { previous != nil }
 
     public mutating func reset() { previous = nil; hasBaseline = false }
 

@@ -7,7 +7,8 @@ import DockSwitchCore
 /// previously approved local component owns encoding, backups and append-only
 /// persistence. No AppleScript, clipboard, input injection or reload tricks.
 final class CustomPhraseController {
-    private let defaults = UserDefaults(suiteName: CustomPhraseShortcut.suiteName)!
+    // Foundation can reject opening the running app's primary domain as a suite.
+    private let defaults = UserDefaults.standard
     private let component = FileManager.default.homeDirectoryForCurrentUser
         .appendingPathComponent("Library/Application Support/wubi-phrase")
     private var hotKey: EventHotKeyRef?
@@ -86,7 +87,8 @@ final class CustomPhraseController {
             if let activeShortcut, let data = try? JSONEncoder().encode(activeShortcut) {
                 defaults.set(data, forKey: CustomPhraseShortcut.preferenceKey)
             }
-            publish("注册失败（\(status)），请选择其他组合键。" + (activeShortcut.map { "仍使用 \($0.display)" } ?? "当前未启用"))
+            let previous = hotKey != nil ? activeShortcut : nil
+            publish("注册失败（\(status)），请选择其他组合键。" + (previous.map { "仍使用 \($0.display)" } ?? "当前未启用"))
             return
         }
         if let hotKey { UnregisterEventHotKey(hotKey) }
@@ -127,8 +129,10 @@ final class CustomPhraseController {
         AXUIElementGetPid(element, &sourcePID)
         defaults.set(Int(sourcePID), forKey: "customPhraseSourcePID")
         var subrole: CFTypeRef?
-        AXUIElementCopyAttributeValue(element, kAXSubroleAttribute as CFString, &subrole)
-        guard subrole as? String != kAXSecureTextFieldSubrole as String else { showTip("无法从密码输入框读取短语"); return }
+        let subroleStatus = AXUIElementCopyAttributeValue(element, kAXSubroleAttribute as CFString, &subrole)
+        guard CustomPhraseSelectionPolicy.mayRead(subroleStatus: subroleStatus, subrole: subrole as? String) else {
+            showTip("无法确认当前输入框的安全属性，未读取短语"); return
+        }
         var selected: CFTypeRef?
         guard AXUIElementCopyAttributeValue(element, kAXSelectedTextAttribute as CFString, &selected) == .success,
               let phrase = selected as? String, !phrase.isEmpty else {

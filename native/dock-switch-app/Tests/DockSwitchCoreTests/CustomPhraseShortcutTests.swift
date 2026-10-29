@@ -1,8 +1,18 @@
 import Carbon
+import ApplicationServices
 import XCTest
 @testable import DockSwitchCore
 
 final class CustomPhraseShortcutTests: XCTestCase {
+    func testSubroleFailuresCannotReadSelection() {
+        XCTAssertFalse(CustomPhraseSelectionPolicy.mayRead(subroleStatus: .cannotComplete, subrole: nil))
+        XCTAssertFalse(CustomPhraseSelectionPolicy.mayRead(subroleStatus: .apiDisabled, subrole: nil))
+        XCTAssertFalse(CustomPhraseSelectionPolicy.mayRead(subroleStatus: .success, subrole: nil))
+        XCTAssertFalse(CustomPhraseSelectionPolicy.mayRead(subroleStatus: .success, subrole: kAXSecureTextFieldSubrole as String))
+        XCTAssertTrue(CustomPhraseSelectionPolicy.mayRead(subroleStatus: .success, subrole: "AXSearchField"))
+        XCTAssertTrue(CustomPhraseSelectionPolicy.mayRead(subroleStatus: .attributeUnsupported, subrole: nil))
+        XCTAssertTrue(CustomPhraseSelectionPolicy.mayRead(subroleStatus: .noValue, subrole: nil))
+    }
     func testDefaultUsesPhysicalGraveWithCommandShift() throws {
         let shortcut = CustomPhraseShortcut.default
         XCTAssertEqual(shortcut.keyCode, 50)

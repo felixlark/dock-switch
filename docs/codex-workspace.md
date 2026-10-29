@@ -26,7 +26,7 @@ coalescing interval collapses duplicate notifications; this is a UI settling del
 a limit on tasks, windows, or events. A two-second maintenance timer checks preferences,
 trust and process presence, without polling the AX tree. There are no new resource caps.
 
-A recognized snapshot requires a standard focused window with no native sheet and an
+A recognized snapshot requires a standard focused window with no native sheet or public dialog and an
 English `Chat toolbar` in the app shell's public AX web area (`app://-/index.html`).
 The scan excludes conversation/composer, sidebar lists, and nested browser web areas.
 `Chat tabs` means open. With that group absent, an enabled header `New tab` button is
@@ -57,70 +57,59 @@ The existing launcher and GoKit5 lifecycle remains in the same app. Read-only di
 are available through `node scripts/codex-workspace-status.js`. Counts and errors contain
 no chat titles or bodies.
 
-## Verification record
+## Candidate-bound verification
 
-- Baseline: 102 Node tests, 43 Swift tests passed.
-- Candidate: `yarn test` passes 102 Node and 61 Swift tests. Added tests cover duplicate
-  events, open-pane idempotence, manual close, opaque identity vs rename/same-name cases,
-  window transitions, restart baseline, and first open after starting outside a chat.
-  Failure-injection tests cover unreadable tabs roles/ancestor children, subscription
-  retry after transient AX failure, unsupported notifications, stale subscription release,
-  the unnamed AXButton wrappers around Codex header controls, and nested toolbar ancestor
-  groups/shell-boundary/cycle handling.
-  Unknown reads suppress actions; only a complete scan can prove tabs absent. Lifecycle
-  maintenance retries transient subscription failures without restarting Codex; diagnostics
-  distinguish active, unsupported and retryable subscription counts.
-  These are state-policy/AX adapter tests, not GUI evidence for AX object stability.
-- Signed native build/install: performed using the existing Developer ID identity and
-  installed launcher configuration. The previous installed bundle/config is retained
-  outside the repository. Installation and policy verification are separate from acceptance.
-- Official Computer Use opened the installed settings app, toggled off/on, and runtime
-  status confirmed detachment/reattachment with existing Accessibility trust.
-- Earlier in this integration session, the official Open Computer Use tool visibly
-  showed chat headers, Chat tabs and New tab, and manually hid the workspace. This did
-  not prove the automatic action on the final candidate.
-- Subsequent official unified Computer Use returned: `Computer Use is not allowed to
-  use the app 'com.openai.codex' for safety reasons.` No alternative GUI controller was
-  used against Codex after this explicit denial. No asar or TCC modification was made.
+Code candidate: `4c4b4bacaca7b55e7b8e3c7e8e495c750d1c5c6e`, based on
+`dbe4eef56f6f10ce178399be83d9ec250dc18230`. Documentation updates retain the same
+runtime source files and installed binary. Baseline tests: 102 Node / 43 Swift.
+Final `yarn test`: 102 Node / 61 Swift, all passed. Tests cover unreadable AX data,
+subscription retry/release, header ancestor boundaries, shell signal filtering, startup,
+manual close, same-name/window identity, and modal invalidation before deferred actions.
 
-## OCU continuation
+The existing Developer ID build/install pipeline produced the installed native app.
+Built and installed Mach-O UUIDs match (`76FF3A2B-89B5-3BB7-909B-7BE61BAF8B85`);
+`codesign --verify --deep --strict` passes with team `HJG65XBC25`. The installed launcher
+configuration matches its pre-change backup. No Codex asar, TCC state or private database
+was changed; no other product was merged or deployed.
 
-The user subsequently specified Open Computer Use (OCU) for Codex itself. OCU successfully
-read and interacted with Codex; the earlier unified CUA refusal does not describe OCU's
-current capability. No security policy or macOS permission was changed.
+Official Open Computer Use (`mcp__open_computer_use`) visibly exercised installed Codex
+26.1023.51421 and installed dock-switch Settings on the same code candidate:
 
-Live OCU acceptance exposed a real failure in b0cae31: the pane stayed closed after a
-round trip and the runtime recorded events but zero presses. The rendered AX tree flattened
-several unnamed ancestors. The true toolbar parent contained only the toolbar, so searching
-only that immediate parent could never find the workspace controls. The adapter now climbs
-to the nearest AXGroup with recognized controls; it stops at an unknown read, parent cycle,
-or non-group shell boundary rather than searching arbitrary app content. Added tests cover
-these actual wrapper relationships and boundaries.
+| Interaction | Observed result |
+| --- | --- |
+| Manually hide workspace in the same chat | Remained closed; no automatic press |
+| Switch away and back to a closed workspace | One visible New tab; AXPress success |
+| Four switches between already-open chats | Each retained one tab; pressCount stayed 9 |
+| Rename Cancel / Save / restore original title while closed | Remained closed; no automatic press; baseline seeded before subsequent navigation |
+| Two existing chats temporarily sharing the same title | Both closed targets reopened on real switches; titles were not used as identity |
+| Cmd+T | One additional New tab; URL field focused; test tab then removed |
+| Disable setting, close pane, switch away/back | Subscriptions detached to zero; pane stayed closed |
+| Re-enable while a chat is closed | Seeded without opening; next actual round trip reopened it |
+| Open same chat in another window, manually close its pane, focus original then return | Closed second-window pane reopened once; original retained one tab |
+| Close test-created window | Returned to original window; subscriptions returned from seven to six |
 
-On the repaired installed code, OCU hid the workspace, switched to another existing chat,
-and switched back. The workspace visibly reopened and runtime AXPress returned success.
-Four further switches between the same two open chats retained one tab per chat and left
-pressCount unchanged. Screenshots and read-only counters are retained in the local issue49
-log/evidence directory. Cmd+T was also visibly verified as New tab (URL entry focused), not
-New Page, during the OCU continuation.
+The rename tests observed the primary shell value-change signals and successful
+post-dialog seeding. The targeted dialog destroyed subscription registered, but its
+callback counter remained zero in this run; recovery was proved through shell signals,
+not assumed destroyed delivery. Final runtime: enabled/observing/trusted, six active
+subscriptions, no unsupported or retryable registrations. The Settings window and test
+window were closed; the original chat title and a single open workspace tab were left.
+Screenshots, status readbacks and historical failures remain in the local issue49 evidence
+log. They are not uploaded with private chat contents to the public repository.
 
-An extended OCU rename test then exposed a second boundary: a Chromium rename dialog
-changes the exposed toolbar identity even though the chat has not changed. Its public AX
-role is AXGroup with subrole AXApplicationDialog; AXModal was false, so the native-sheet
-check alone was insufficient. Snapshot collection now explicitly scans for public dialog
-subroles before considering a chat view. Because Save permanently replaces that identity,
-observing a dialog invalidates the old baseline. The first recognized post-dialog view only
-seeds it. A targeted public AXUIElementDestroyed subscription on the observed dialog feeds
-the same notification-coalescing path, so dismissal can seed before the next actual switch;
-it is retained separately from window-list cleanup and removed on recovery/detach. Existing
-notifications can also resume seeding. Unsupported/missing notifications or incomplete AX
-reads remain fail-closed: if no usable post-dialog event arrives, the next recognized view
-seeds without opening. No AX-tree polling is introduced. Tests cover dialog detection and
-baseline invalidation with a permanently replaced toolbar; installed notification delivery
-still requires visible verification.
+Independent read-only reviewer `/root/independent_review` reviewed the overall change
+from the integration baseline and supplemented every code revision through the code
+candidate above. The two initial P2 findings (unknown-read handling and subscription
+recovery) and the later P2 (debounce swallowing a transient dialog) were fixed and cleared.
+The reviewer independently reran all 102 Node / 61 Swift tests and found no remaining
+code blocker. Exact reviewer model ID and reasoning setting were not exposed.
 
-The PR remains Draft and is not merged. Remaining extended GUI cases and the final
-candidate-bound review/readback are tracked in the original Issue/PR; tests of opaque
-identity do not alone prove rename/same-name stability on future Codex versions. A live
-Codex restart must preserve other active chats rather than interrupt them merely to obtain
-a test result. The adapter's on/off lifecycle can be tested without restarting Codex.
+Codex itself was not restarted while other chats were active, and Accessibility permission
+was not revoked for testing. Startup/restart policy tests and live on/off attachment are
+separate from an unperformed live host-restart or TCC-revocation test. AX identity and event
+delivery remain compatibility assumptions: if the server delivers a notification only
+after a transient dialog disappears, public snapshots cannot reconstruct its past structure.
+Do not infer future-version or all-timing guarantees from the tested interactions.
+
+PR #50 links both original issues and is not merged. The previous installed app is retained
+for rollback; disabling the setting is the immediate runtime rollback.

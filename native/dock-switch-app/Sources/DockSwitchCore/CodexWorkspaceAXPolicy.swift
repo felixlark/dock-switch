@@ -12,6 +12,14 @@ struct CodexWorkspaceScanNode<Element> {
     let label: String
     /// nil means the children could not be read. Pruned leaves use an empty array.
     let children: [Element]?
+    let subrole: String
+
+    init(role: String, label: String, children: [Element]?, subrole: String = "") {
+        self.role = role
+        self.label = label
+        self.children = children
+        self.subrole = subrole
+    }
 }
 
 enum CodexWorkspaceTreeSearch {
@@ -26,6 +34,14 @@ enum CodexWorkspaceTreeSearch {
         read: (Element) -> CodexWorkspaceScanNode<Element>?,
         matching: (String, String) -> Bool
     ) -> CodexWorkspaceSearchResult<Element> {
+        findNode(root: root, read: read, matching: { matching($0.role, $0.label) })
+    }
+
+    static func findNode<Element: Hashable>(
+        root: Element,
+        read: (Element) -> CodexWorkspaceScanNode<Element>?,
+        matching: (CodexWorkspaceScanNode<Element>) -> Bool
+    ) -> CodexWorkspaceSearchResult<Element> {
         var queue = [root]
         var visited = Set<Element>()
         var index = 0
@@ -35,7 +51,7 @@ enum CodexWorkspaceTreeSearch {
             index += 1
             guard visited.insert(element).inserted else { continue }
             guard let node = read(element) else { incomplete = true; continue }
-            if matching(node.role, node.label) { return .found(element) }
+            if matching(node) { return .found(element) }
             guard let children = node.children else { incomplete = true; continue }
             queue += children
         }

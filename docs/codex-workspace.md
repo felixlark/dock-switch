@@ -55,7 +55,7 @@ no chat titles or bodies.
 ## Verification record
 
 - Baseline: 102 Node tests, 43 Swift tests passed.
-- Candidate: `yarn test` passes 102 Node and 57 Swift tests. Added tests cover duplicate
+- Candidate: `yarn test` passes 102 Node and 58 Swift tests. Added tests cover duplicate
   events, open-pane idempotence, manual close, opaque identity vs rename/same-name cases,
   window transitions, restart baseline, and first open after starting outside a chat.
   Failure-injection tests cover unreadable tabs roles/ancestor children, subscription
@@ -98,6 +98,13 @@ Four further switches between the same two open chats retained one tab per chat 
 pressCount unchanged. Screenshots and read-only counters are retained in the local issue49
 log/evidence directory. Cmd+T was also visibly verified as New tab (URL entry focused), not
 New Page, during the OCU continuation.
+
+An extended OCU rename test then exposed a second boundary: a Chromium rename dialog
+changes the exposed toolbar identity even though the chat has not changed. Its public AX
+role is AXGroup with subrole AXApplicationDialog; AXModal was false, so the native-sheet
+check alone was insufficient. Snapshot collection now explicitly scans for public dialog
+subroles before considering a chat view and does not update the switch baseline through a
+dialog or incomplete read. A regression test covers a dialog alongside a background toolbar.
 
 The PR remains Draft and is not merged. Remaining extended GUI cases and the final
 candidate-bound review/readback are tracked in the original Issue/PR; tests of opaque

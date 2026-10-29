@@ -65,6 +65,16 @@ final class CodexWorkspaceAXPolicyTests: XCTestCase {
         guard case .unknown = cycle else { return XCTFail("AX parent cycles must not loop") }
     }
 
+    func testApplicationDialogIsDetectedBehindAnExposedChatToolbar() {
+        let modalTree = [
+            0: CodexWorkspaceScanNode(role: "AXGroup", label: "", children: [1, 2]),
+            1: CodexWorkspaceScanNode(role: "AXToolbar", label: "Chat toolbar", children: []),
+            2: CodexWorkspaceScanNode(role: "AXGroup", label: "Rename chat", children: [], subrole: "AXApplicationDialog")
+        ]
+        let result = CodexWorkspaceTreeSearch.findNode(root: 0, read: { modalTree[$0] }, matching: { $0.subrole == "AXApplicationDialog" })
+        guard case .found(2) = result else { return XCTFail("background toolbar must not hide the active Chromium dialog") }
+    }
+
     func testTransientSubscriptionFailureRecoversWithoutRestart() {
         var subscriptions = CodexWorkspaceSubscriptions<Int>()
         var calls = 0

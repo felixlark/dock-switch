@@ -53,7 +53,6 @@ Download the latest macOS app from [GitHub Releases](https://github.com/felixlar
 The app is not required to launch at login, but adding it to Login Items keeps its global launcher and control socket available after sign-in. Unsigned or locally built apps may trigger the standard macOS unidentified-developer warning.
 
 ## Build from source
-
 Requirements: macOS, Xcode Command Line Tools (Swift), Node.js, Yarn, and (for shortcut configuration) [Karabiner-Elements](https://karabiner-elements.pqrs.org/).
 
 ```bash

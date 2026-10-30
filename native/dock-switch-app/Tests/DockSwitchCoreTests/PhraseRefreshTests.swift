@@ -64,6 +64,40 @@ final class PhraseRefreshTests: XCTestCase {
         XCTAssertEqual(changedApp.1, ["english"])
     }
 
+    func testReturningToSameSourceOrAppStillCancelsRestore() {
+        for changeApp in [false, true] {
+            let history = PhraseRefreshHistory()
+            var current = "wubi"
+            var selected: [String] = []
+            var result: PhraseInputRefresh.Result?
+            PhraseInputRefresh.run(original: "wubi", alternate: "english", sourcePID: 42,
+                current: { current }, foreground: { 42 }, select: {
+                    selected.append($0); current = $0; history.sourceChanged(); return true
+                }, contextUnchanged: { history.unchanged }, afterSwitch: { action in
+                    if changeApp {
+                        history.applicationChanged() // A → B
+                        history.applicationChanged() // B → A
+                    } else {
+                        current = "wubi"; history.sourceChanged()
+                        current = "english"; history.sourceChanged()
+                    }
+                    action()
+                }, completion: { result = $0 })
+            XCTAssertEqual(result, .contextChanged)
+            XCTAssertEqual(selected, ["english"])
+            XCTAssertEqual(current, "english")
+        }
+    }
+
+    func testHistoryAcceptsOnlyTheExpectedSourceNotification() {
+        let history = PhraseRefreshHistory()
+        XCTAssertTrue(history.unchanged)
+        history.sourceChanged()
+        XCTAssertTrue(history.unchanged)
+        history.sourceChanged()
+        XCTAssertFalse(history.unchanged)
+    }
+
     func testTooltipAtBottomCenterOfActiveDisplaysUsableArea() {
         for area in [CGRect(x: 0, y: 70, width: 1512, height: 850),
                      CGRect(x: -1920, y: -1000, width: 1920, height: 1000),

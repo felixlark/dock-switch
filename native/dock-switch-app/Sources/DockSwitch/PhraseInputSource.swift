@@ -30,6 +30,13 @@ struct PhraseInputSource {
         }.compactMap { property($0, kTISPropertyInputSourceID) as String? }
         // Scope this integration to the configured Apple Wubi and English pair.
         let alternate = original == wubiID ? englishSources.first : englishSources.contains(original) ? wubiID : nil
+        let history = PhraseRefreshHistory()
+        let sourceCenter = DistributedNotificationCenter.default()
+        let appCenter = NSWorkspace.shared.notificationCenter
+        let sourceObserver = sourceCenter.addObserver(forName: Notification.Name(kTISNotifySelectedKeyboardInputSourceChanged as String),
+            object: nil, queue: nil) { _ in history.sourceChanged() }
+        let appObserver = appCenter.addObserver(forName: NSWorkspace.didActivateApplicationNotification,
+            object: nil, queue: nil) { _ in history.applicationChanged() }
         PhraseInputRefresh.run(original: original,
             alternate: sources.contains(where: { (property($0, kTISPropertyInputSourceID) as String?) == alternate }) ? alternate : nil,
             sourcePID: sourcePID, current: currentID,
@@ -37,10 +44,12 @@ struct PhraseInputSource {
             select: { id in
                 guard let source = sources.first(where: { (property($0, kTISPropertyInputSourceID) as String?) == id }) else { return false }
                 return TISSelectInputSource(source) == noErr
-            }, afterSwitch: { action in
+            }, contextUnchanged: { history.unchanged }, afterSwitch: { action in
                 // Let the client's run loop observe deselection before restoring.
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.15, execute: action)
             }, completion: { result in
+                sourceCenter.removeObserver(sourceObserver)
+                appCenter.removeObserver(appObserver)
                 switch result {
                 case .refreshed: completion("已切换中英并恢复原输入法")
                 case .contextChanged: completion("输入状态已变化，未继续切换；可手动切换中英")

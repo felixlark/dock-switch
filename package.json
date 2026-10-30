@@ -1,6 +1,6 @@
 {
     "name": "dock-switch",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "description": "dock-switch",
     "author": "Longbiao CHEN",
     "main": "src/main.js",

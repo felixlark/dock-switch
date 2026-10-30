@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-BUILD_ROOT="${DOCK_SWITCH_BUILD_ROOT:-$HOME/Local/dock-switch/build}"
+BUILD_ROOT="${DOCK_SWITCH_BUILD_ROOT:-$HOME/Library/Caches/dock-switch/build}"
 SOURCE_APP="$BUILD_ROOT/native/dock-switch.app"
 TARGET_APP="/Applications/dock-switch.app"
 ENTITLEMENTS="$ROOT_DIR/resources/entitlements.mac.plist"

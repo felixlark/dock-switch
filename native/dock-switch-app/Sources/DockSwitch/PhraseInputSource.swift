@@ -33,8 +33,10 @@ struct PhraseInputSource {
         let history = PhraseRefreshHistory()
         let sourceCenter = DistributedNotificationCenter.default()
         let appCenter = NSWorkspace.shared.notificationCenter
-        let sourceObserver = sourceCenter.addObserver(forName: Notification.Name(kTISNotifySelectedKeyboardInputSourceChanged as String),
-            object: nil, queue: nil) { _ in history.sourceChanged() }
+        let sourceObserver = PhraseSourceObserver(history: history)
+        sourceCenter.addObserver(sourceObserver, selector: #selector(PhraseSourceObserver.changed(_:)),
+            name: Notification.Name(kTISNotifySelectedKeyboardInputSourceChanged as String),
+            object: nil, suspensionBehavior: .deliverImmediately)
         let appObserver = appCenter.addObserver(forName: NSWorkspace.didActivateApplicationNotification,
             object: nil, queue: nil) { _ in history.applicationChanged() }
         PhraseInputRefresh.run(original: original,
@@ -59,4 +61,12 @@ struct PhraseInputSource {
                 }
             })
     }
+}
+
+/// The utility normally stays inactive, so distributed source notifications must
+/// bypass the default suspension/coalescing behavior (without global changes).
+private final class PhraseSourceObserver: NSObject {
+    let history: PhraseRefreshHistory
+    init(history: PhraseRefreshHistory) { self.history = history }
+    @objc func changed(_ notification: Notification) { history.sourceChanged() }
 }

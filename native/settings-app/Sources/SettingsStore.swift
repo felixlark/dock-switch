@@ -31,6 +31,7 @@ final class SettingsStore: ObservableObject {
         DistributedNotificationCenter.default().postNotificationName(CustomPhraseShortcut.changed,
             object: nil, userInfo: nil, deliverImmediately: true)
     }
+
     // Shared with the runtime; kept outside the signed application bundle.
     @Published var codexWorkspaceAutoExpand = UserDefaults(suiteName: "me.longbiaochen.dock-switch")!
         .object(forKey: "codexWorkspaceAutoExpand") as? Bool ?? true {

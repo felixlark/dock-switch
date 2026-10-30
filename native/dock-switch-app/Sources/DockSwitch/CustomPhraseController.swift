@@ -6,7 +6,7 @@ import SwiftUI
 
 /// Owns the global shortcut and selected-text flow in the existing app. The
 /// previously approved local component owns encoding, backups and append-only
-/// persistence. No AppleScript, clipboard, input injection or reload tricks.
+/// persistence. No AppleScript, clipboard or input injection.
 final class CustomPhraseController {
     // Foundation can reject opening the running app's primary domain as a suite.
     private let defaults = UserDefaults.standard
@@ -20,6 +20,7 @@ final class CustomPhraseController {
     private var settingsExitObserver: NSObjectProtocol?
     private var recording = false
     private var busy = false
+    private var operationScreen: NSScreen?
     private var tip: NSPanel?
     private var dismissTip: DispatchWorkItem?
 
@@ -31,7 +32,7 @@ final class CustomPhraseController {
                 switch variant {
                 case "known": message = "已有：原生短语 → dtty"
                 case "error": message = "未添加：请选择一个连续中文词组，不要包含空格或换行。"
-                default: message = "已入库：原生短语 → dtty\n如未出词，请重开当前应用"
+                default: message = "已入库：原生短语 → dtty\n已切换中英并恢复原输入法"
                 }
                 let appearance = variant == "light" ? NSAppearance(named: .aqua)
                     : variant == "dark" ? NSAppearance(named: .darkAqua) : nil
@@ -154,6 +155,8 @@ final class CustomPhraseController {
               let phrase = selected as? String, !phrase.isEmpty else {
             showTip("请先选中一个中文词组；当前应用需支持选中文本读取"); return
         }
+        operationScreen = activeScreen()
+        let originalInput = PhraseInputSource.currentID()
         busy = true
         DispatchQueue.global(qos: .userInitiated).async { [self] in
             do {
@@ -179,7 +182,13 @@ final class CustomPhraseController {
                                 throw PhraseError("入库结果未知，请勿重复添加，先核查词库。")
                             }
                             DispatchQueue.main.async { [self] in
-                                finish("\(json["status"] as? String == "KNOWN" ? "已有" : "已入库")：\(phrase) → \(code)\n如未出词，请重开当前应用")
+                                if json["status"] as? String == "KNOWN" {
+                                    finish("已有：\(phrase) → \(code)")
+                                } else {
+                                    PhraseInputSource.refresh(original: originalInput, sourcePID: sourcePID) { [self] hint in
+                                        finish("已入库：\(phrase) → \(code)\n\(hint)")
+                                    }
+                                }
                             }
                         } catch { fail(error) }
                     }
@@ -215,18 +224,44 @@ final class CustomPhraseController {
     }
 
     private func fail(_ error: Error) { DispatchQueue.main.async { [self] in finish("未添加：\(error.localizedDescription)") } }
-    private func finish(_ message: String) { busy = false; showTip(message) }
+    private func finish(_ message: String) {
+        busy = false
+        showTip(message, screen: operationScreen)
+        operationScreen = nil
+    }
 
-    private func showTip(_ message: String, preview: Bool = false, appearance: NSAppearance? = nil) {
+    /// Anchor to the foreground app's focused window, not a parked pointer on
+    /// another display. Public AX geometry uses top-left global coordinates.
+    private func activeScreen() -> NSScreen? {
+        guard let app = NSWorkspace.shared.frontmostApplication else { return NSScreen.main }
+        let element = AXUIElementCreateApplication(app.processIdentifier)
+        var window: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(element, kAXFocusedWindowAttribute as CFString, &window) == .success,
+              let window, CFGetTypeID(window) == AXUIElementGetTypeID() else { return NSScreen.main }
+        var position: CFTypeRef?; var dimensions: CFTypeRef?
+        let focused = window as! AXUIElement
+        guard AXUIElementCopyAttributeValue(focused, kAXPositionAttribute as CFString, &position) == .success,
+              AXUIElementCopyAttributeValue(focused, kAXSizeAttribute as CFString, &dimensions) == .success,
+              let position, let dimensions,
+              CFGetTypeID(position) == AXValueGetTypeID(), CFGetTypeID(dimensions) == AXValueGetTypeID() else { return NSScreen.main }
+        var point = CGPoint.zero; var size = CGSize.zero
+        guard AXValueGetValue(position as! AXValue, .cgPoint, &point),
+              AXValueGetValue(dimensions as! AXValue, .cgSize, &size),
+              let primary = NSScreen.screens.first else { return NSScreen.main }
+        let frame = CGRect(x: point.x, y: primary.frame.maxY - point.y - size.height, width: size.width, height: size.height)
+        return NSScreen.screens.filter { $0.frame.intersects(frame) }.max {
+            let a = $0.frame.intersection(frame); let b = $1.frame.intersection(frame)
+            return a.width * a.height < b.width * b.height
+        } ?? NSScreen.main
+    }
+
+    private func showTip(_ message: String, preview: Bool = false, appearance: NSAppearance? = nil, screen: NSScreen? = nil) {
         dismissTip?.cancel(); tip?.close()
         let content = PhraseTipContent(message: message, preview: preview)
         let hosting = NSHostingView(rootView: PhraseTipView(content: content))
         let size = hosting.fittingSize
-        let mouse = NSEvent.mouseLocation
-        let screen = NSScreen.screens.first { $0.frame.contains(mouse) } ?? NSScreen.main
-        let area = screen?.visibleFrame ?? NSRect(origin: mouse, size: size)
-        let frame = NSRect(x: min(max(mouse.x + 16, area.minX), area.maxX - size.width),
-            y: min(max(mouse.y - size.height - 16, area.minY), area.maxY - size.height), width: size.width, height: size.height)
+        let area = (screen ?? activeScreen())?.visibleFrame ?? NSRect(origin: .zero, size: size)
+        let frame = PhraseTipPlacement.frame(size: size, visibleFrame: area)
         let panel = NSPanel(contentRect: frame, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         panel.level = .floating; panel.isReleasedWhenClosed = false; panel.ignoresMouseEvents = true
         panel.appearance = appearance

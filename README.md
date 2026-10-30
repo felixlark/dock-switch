@@ -70,9 +70,15 @@ rejects secure text fields, and displays a nonactivating tooltip. It does not us
 the clipboard or AppleScript. A recognized legacy **选词加入五笔短语** service
 shortcut is retired after successful native registration; its original value is
 backed up in the app's preferences, preserving other global shortcuts.
-Phrase availability still depends on the input client's cache: if a newly added
-phrase is absent, reopen that client normally. No input-service restart, reload
-toggle or display change is performed.
+After a new phrase is stored, the app uses public Text Input Source Services to
+switch once between enabled Apple Wubi and English sources and restore the original
+source. It skips the refresh if the foreground app or input source has changed;
+existing phrases, failures and previews never switch input sources. If switching
+is unavailable or fails, the tooltip gives a manual recovery hint. Input-client
+caching can still vary; reopen that client if the new phrase remains absent.
+The nonactivating tooltip is centered above the bottom of the active window's
+display, inside its usable area, independent of the mouse position. No input
+service is restarted and no app is activated by the refresh.
 
 ## Install
 

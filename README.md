@@ -46,6 +46,34 @@ See [integration and acceptance notes](docs/codex-workspace.md).
 Run `node scripts/codex-workspace-status.js` for read-only subscription, trust, event and
 action counters (no chat titles or contents).
 
+## Custom phrases (local Wubi component)
+
+Open **Settings → 自定义短语** to enable, record and apply the global
+selected-text shortcut (default **Command+Shift+grave**, the key left of `1`).
+Dock-switch registers the physical key code with macOS, independently of the
+current input source. Changes take effect without restarting the target app.
+Recording temporarily releases the active combination; Escape, leaving the
+settings window or quitting Settings restores it. Failed registration keeps
+the previous working combination. The preference survives app reinstallations.
+
+This optional integration requires the already provisioned local component at
+`~/Library/Application Support/wubi-phrase/`: `encode.py`, `wubi86.dict.yaml`,
+`known-phrases.json`, `db-candidate/append_phrase.py`, and
+`db-candidate/schema.json`. These user-specific files are not bundled or uploaded.
+Without the component the shortcut is not registered. The component is responsible
+for schema checks, consistent backups and append-only writes to the user's macOS
+text replacements; this is an unsupported local storage adapter, not an Apple API.
+Existing phrases remain intact; code collisions require confirmation.
+
+The native app reads only the selected text of the focused Accessibility element,
+rejects secure text fields, and displays a nonactivating tooltip. It does not use
+the clipboard or AppleScript. A recognized legacy **选词加入五笔短语** service
+shortcut is retired after successful native registration; its original value is
+backed up in the app's preferences, preserving other global shortcuts.
+Phrase availability still depends on the input client's cache: if a newly added
+phrase is absent, reopen that client normally. No input-service restart, reload
+toggle or display change is performed.
+
 ## Install
 
 Download the latest macOS app from [GitHub Releases](https://github.com/felixlark/dock-switch/releases) and move `dock-switch.app` into `/Applications`. On first use, grant Accessibility access when prompted (System Settings → Privacy & Security → Accessibility); it is used to inspect Dock items and control window placement. macOS may also request Automation access to control the Dock. Only enable optional input/automation permissions when using the corresponding feature.
@@ -53,6 +81,7 @@ Download the latest macOS app from [GitHub Releases](https://github.com/felixlar
 The app is not required to launch at login, but adding it to Login Items keeps its global launcher and control socket available after sign-in. Unsigned or locally built apps may trigger the standard macOS unidentified-developer warning.
 
 ## Build from source
+
 Requirements: macOS, Xcode Command Line Tools (Swift), Node.js, Yarn, and (for shortcut configuration) [Karabiner-Elements](https://karabiner-elements.pqrs.org/).
 
 ```bash

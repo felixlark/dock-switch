@@ -8,6 +8,7 @@ import SwiftUI
 final class DockSwitchApp: NSObject, NSApplicationDelegate {
     private static var sharedDelegate: DockSwitchApp?
     private let configStore = ConfigStore()
+    private let customPhrases = CustomPhraseController()
     private let codexWorkspaceObserver = CodexWorkspaceObserver()
     private let displayService = DisplayService()
     private let dockSnapshotService = DockSnapshotService()
@@ -52,6 +53,7 @@ final class DockSwitchApp: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.accessory)
         setupStatusItem()
         registerHotKey()
+        customPhrases.start()
         startControlServer()
         startGokit5SerialListener()
         _ = ensureAccessibilityPermission(prompt: true)
@@ -60,6 +62,7 @@ final class DockSwitchApp: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         codexWorkspaceObserver.stop()
+        customPhrases.stop()
         hideLauncher()
         if let hotKeyRef { UnregisterEventHotKey(hotKeyRef) }
         if let eventHandler { RemoveEventHandler(eventHandler) }
@@ -220,7 +223,10 @@ final class DockSwitchApp: NSObject, NSApplicationDelegate {
             let app = Unmanaged<DockSwitchApp>.fromOpaque(userData).takeUnretainedValue()
             var hotKeyID = EventHotKeyID()
             GetEventParameter(event, EventParamName(kEventParamDirectObject), EventParamType(typeEventHotKeyID), nil, MemoryLayout<EventHotKeyID>.size, nil, &hotKeyID)
-            if hotKeyID.id == 1 {
+            guard hotKeyID.signature == fourCharCode("DS20") else { return OSStatus(eventNotHandledErr) }
+            if hotKeyID.id == 2 {
+                DispatchQueue.main.async { app.customPhrases.addSelection() }
+            } else if hotKeyID.id == 1 {
                 DispatchQueue.main.async {
                     app.toggleLauncher()
                 }

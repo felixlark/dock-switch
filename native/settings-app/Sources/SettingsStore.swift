@@ -2,6 +2,36 @@ import Foundation
 
 @MainActor
 final class SettingsStore: ObservableObject {
+    @Published var phraseShortcut = CustomPhraseShortcut.default
+    @Published var phraseEnabled = true
+    @Published var phraseStatus = ""
+    private var phraseObserver: NSObjectProtocol?
+
+    var phraseComponentInstalled: Bool {
+        let base = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/wubi-phrase")
+        return CustomPhraseShortcut.componentFiles
+            .allSatisfy { FileManager.default.fileExists(atPath: base.appendingPathComponent($0).path) }
+    }
+
+    func loadPhraseSettings() {
+        let defaults = UserDefaults(suiteName: CustomPhraseShortcut.suiteName)!
+        defaults.synchronize()
+        phraseShortcut = CustomPhraseShortcut.load(defaults)
+        phraseEnabled = defaults.object(forKey: CustomPhraseShortcut.enabledKey) as? Bool ?? true
+        phraseStatus = defaults.string(forKey: CustomPhraseShortcut.statusKey) ?? "等待 dock-switch 注册快捷键"
+    }
+
+    func savePhraseSettings() {
+        let defaults = UserDefaults(suiteName: CustomPhraseShortcut.suiteName)!
+        guard phraseShortcut.isValid, let data = try? JSONEncoder().encode(phraseShortcut) else { return }
+        defaults.set(data, forKey: CustomPhraseShortcut.preferenceKey)
+        defaults.set(phraseEnabled, forKey: CustomPhraseShortcut.enabledKey)
+        defaults.synchronize()
+        phraseStatus = "正在应用…"
+        DistributedNotificationCenter.default().postNotificationName(CustomPhraseShortcut.changed,
+            object: nil, userInfo: nil, deliverImmediately: true)
+    }
+
     // Shared with the runtime; kept outside the signed application bundle.
     @Published var codexWorkspaceAutoExpand = UserDefaults(suiteName: "me.longbiaochen.dock-switch")!
         .object(forKey: "codexWorkspaceAutoExpand") as? Bool ?? true {
@@ -26,6 +56,15 @@ final class SettingsStore: ObservableObject {
         self.dockCachePath = Self.value(after: "--dock-cache", in: arguments)
             ?? "\(NSHomeDirectory())/Library/Application Support/dock-switch/dock-items-cache.json"
         load()
+        loadPhraseSettings()
+        phraseObserver = DistributedNotificationCenter.default().addObserver(forName: CustomPhraseShortcut.statusChanged,
+            object: nil, queue: .main) { [weak self] _ in
+                // Preserve the draft controls; only update runtime acknowledgement.
+                let defaults = UserDefaults(suiteName: CustomPhraseShortcut.suiteName)!
+                defaults.synchronize()
+                let status = defaults.string(forKey: CustomPhraseShortcut.statusKey) ?? "等待运行状态"
+                Task { @MainActor [weak self] in self?.phraseStatus = status }
+            }
     }
 
     var filteredRows: [SettingsRow] {

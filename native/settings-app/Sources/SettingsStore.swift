@@ -2,6 +2,15 @@ import Foundation
 
 @MainActor
 final class SettingsStore: ObservableObject {
+    // Shared with the runtime; kept outside the signed application bundle.
+    @Published var codexWorkspaceAutoExpand = UserDefaults(suiteName: "me.longbiaochen.dock-switch")!
+        .object(forKey: "codexWorkspaceAutoExpand") as? Bool ?? true {
+        didSet {
+            let defaults = UserDefaults(suiteName: "me.longbiaochen.dock-switch")!
+            defaults.set(codexWorkspaceAutoExpand, forKey: "codexWorkspaceAutoExpand")
+            defaults.synchronize()
+        }
+    }
     @Published var rows: [SettingsRow] = []
     @Published var query = ""
     @Published var statusText = "读取中..."

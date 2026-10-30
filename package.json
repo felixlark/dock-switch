@@ -17,7 +17,7 @@
         "electron-builder": "26.15.3"
     },
     "scripts": {
-        "test": "node --test test/*.test.js && swift test --package-path native/dock-switch-app",
+        "test": "node --test test/*.test.js && swift test --package-path native/dock-switch-app --scratch-path \"$HOME/Library/Caches/dock-switch/swift-test\" --cache-path \"$HOME/Library/Caches/dock-switch/swift-cache\"",
         "karabiner:f20": "node scripts/configure-karabiner-f20-shortcuts.js",
         "karabiner:f20:check": "node scripts/configure-karabiner-f20-shortcuts.js --check",
         "build:settings": "bash scripts/build-settings-app.sh",

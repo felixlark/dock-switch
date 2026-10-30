@@ -39,6 +39,10 @@ struct SettingsRootView: View {
                     store.load()
                 }
             }
+            Toggle("Codex 切换聊天时展开已关闭的工作区", isOn: $store.codexWorkspaceAutoExpand)
+            Text("立即生效。使用现有辅助功能授权；已展开时不新增标签，⌘T 保持 New tab。")
+                .font(.caption)
+                .foregroundStyle(.secondary)
             TextField("搜索 App", text: $store.query)
                 .textFieldStyle(.roundedBorder)
                 .frame(maxWidth: 420)

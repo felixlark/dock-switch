@@ -52,7 +52,7 @@ struct SettingsRootView: View {
             Divider()
             Label(store.phraseComponentInstalled ? "本机五笔短语组件已就绪" : "尚未安装本机五笔短语组件",
                 systemImage: store.phraseComponentInstalled ? "checkmark.circle" : "exclamationmark.triangle")
-            Text("写入前自动备份，保留已有短语；同码词需确认后追加。成功后显示浮层提示。若新增短语暂未出词，请重开使用它的应用。")
+            Text("写入前自动备份，保留已有短语；同码词需确认后追加。新增后自动切换一次中英并恢复原输入法，提示固定在活动屏幕下方。若仍未出词，请重开使用它的应用。")
                 .foregroundStyle(.secondary)
             if !store.phraseComponentInstalled {
                 Text("此功能需要本机已配置的五笔编码与短语备份组件。安装位置：~/Library/Application Support/wubi-phrase。")

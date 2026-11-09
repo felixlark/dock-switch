@@ -34,11 +34,11 @@ final class CustomPhraseShortcutTests: XCTestCase {
         let name = "dock-switch-test-\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: name)!
         defer { defaults.removePersistentDomain(forName: name) }
-        defaults.set(false, forKey: "codexWorkspaceAutoExpand")
+        defaults.set(false, forKey: "unrelatedSetting")
         let shortcut = CustomPhraseShortcut(keyCode: 13, modifiers: UInt32(cmdKey | optionKey), keyLabel: "W")
         defaults.set(try JSONEncoder().encode(shortcut), forKey: CustomPhraseShortcut.preferenceKey)
         XCTAssertEqual(CustomPhraseShortcut.load(defaults), shortcut)
-        XCTAssertFalse(defaults.bool(forKey: "codexWorkspaceAutoExpand"))
+        XCTAssertFalse(defaults.bool(forKey: "unrelatedSetting"))
         defaults.set(Data("invalid".utf8), forKey: CustomPhraseShortcut.preferenceKey)
         XCTAssertEqual(CustomPhraseShortcut.load(defaults), .default)
     }

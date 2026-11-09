@@ -12,39 +12,10 @@
 
 See the [Sphinx documentation](docs/index.rst) and the [shortcut verification guide](docs/shortcut-verification.rst) for additional detail.
 
-## Codex workspace on chat switch
+## Codex Plus
 
-The native app observes public macOS Accessibility notifications for `com.openai.codex`.
-On a changed chat view or focused Codex window, it presses the header's **New tab**
-button only when **Chat tabs** is absent. An already visible workspace is left alone;
-Cmd+T remains Codex's **New tab** command. Reopening a hidden workspace uses Codex's
-New tab action and can add one blank tab; it does not add tabs on subsequent switches
-while that workspace is visible.
-
-Turn this off in **Settings → Codex 切换聊天时展开已关闭的工作区**. The switch takes effect
-immediately (observer subscriptions refresh within two seconds), independently of the
-launcher table's Save button. The preference lives in the app's macOS preferences,
-outside its signed bundle, and survives reinstalling the app.
-
-The observer shares the existing app lifecycle and Accessibility authorization, detaches
-on quit/disable/permission loss/Codex exit, and reattaches on Codex launch. Starting or
-reenabling seeds the current view without reopening a manually closed workspace.
-Only public window/header metadata and opaque AX object identities are used; conversation
-and composer subtrees are excluded. No keyboard hook, private database, Codex bundle
-change, or additional daemon is involved.
-
-Compatibility: targets the observed Codex 26.1023.51421 English AX labels.
-A standard chat header with `Chat toolbar` and either `Chat tabs` or a `New tab` button
-is required. Settings, archived-chat pages, full-view layouts without that header, and
-unknown/localized layouts are skipped. Toolbar identities distinguish equal titles.
-Public shell/dialog notifications invalidate the baseline through Rename; the first
-recognized post-dialog view only seeds it, even if Rename remounts the toolbar.
-AX is not a documented task identity API. A future view remount or missing/late
-notification can require revalidation.
-Disable/remove this adapter when Codex provides a supported always-open workspace option.
-See [integration and acceptance notes](docs/codex-workspace.md).
-Run `node scripts/codex-workspace-status.js` for read-only subscription, trust, event and
-action counters (no chat titles or contents).
+Codex workspace enhancements are maintained by the standalone
+[Codex Plus project](https://github.com/felixlark/codex-plus).
 
 ## Custom phrases (local Wubi component)
 

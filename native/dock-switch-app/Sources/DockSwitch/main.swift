@@ -9,7 +9,6 @@ final class DockSwitchApp: NSObject, NSApplicationDelegate {
     private static var sharedDelegate: DockSwitchApp?
     private let configStore = ConfigStore()
     private let customPhrases = CustomPhraseController()
-    private let codexWorkspaceObserver = CodexWorkspaceObserver()
     private let displayService = DisplayService()
     private let dockSnapshotService = DockSnapshotService()
     private let dockVisibilityService = DockVisibilityService()
@@ -57,11 +56,9 @@ final class DockSwitchApp: NSObject, NSApplicationDelegate {
         startControlServer()
         startGokit5SerialListener()
         _ = ensureAccessibilityPermission(prompt: true)
-        codexWorkspaceObserver.start()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        codexWorkspaceObserver.stop()
         customPhrases.stop()
         hideLauncher()
         if let hotKeyRef { UnregisterEventHotKey(hotKeyRef) }
@@ -141,10 +138,6 @@ final class DockSwitchApp: NSObject, NSApplicationDelegate {
                     return ["enabled": false, "status": "disabled", "running": false, "portPath": ""]
                 }
                 return listener.snapshot().json()
-            },
-            getCodexWorkspaceStatus: { [weak self] in
-                guard let self else { return ["observing": false] }
-                return self.runOnMain { self.codexWorkspaceObserver.status() }
             },
             selectCodexDisplay: { [weak self] command in
                 guard let self else { return ["ok": false, "error": "dock-switch runtime is not ready"] }

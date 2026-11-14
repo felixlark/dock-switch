@@ -22,10 +22,6 @@ function usage() {
     console.error("  dock-switch-cli codex-display --target <side_left|external|side_right|internal>");
     console.error("  dock-switch-cli computer-use-browser [--anchor-app <AppName>] [--browser-app <AppName>]");
     console.error("  dock-switch-cli gokit5-status");
-    console.error("  dock-switch-cli tool-open --app-path <AbsoluteAppPath> [--url <file/http/https URL>] [--dedicated]");
-    console.error("  dock-switch-cli tool-place --pid <Pid> --window-id <CGWindowID>");
-    console.error("  dock-switch-cli tool-status | tool-exempt | tool-recover");
-    console.error("  dock-switch-cli tool-routing --enabled <true|false>");
     console.error("  dock-switch-cli place (--app <AppName> | --pid <Pid>) --placement <Placement>");
     console.error("  dock-switch-cli move (--app <AppName> | --pid <Pid>) --x <X> --y <Y> --w <W> --h <H>");
     console.error("  dock-switch-cli get-chrome-window --profile-dir <Dir>");
@@ -49,15 +45,6 @@ function parseArgs(argv) {
     let y = null;
     let w = null;
     let h = null;
-    let appPath = "";
-    let resourceURL = "";
-    let windowID = null;
-    let enabled = null;
-    let dedicated = false;
-    if (["tool-status", "tool-exempt", "tool-recover"].includes(command)) {
-        if (argv.length !== 1) usage();
-        return { command, format: "json" };
-    }
     if (command === "displays") {
         if (argv.length !== 1) usage();
         return { command: "debug-displays", format: "json" };
@@ -76,19 +63,7 @@ function parseArgs(argv) {
     }
     for (let i = 1; i < argv.length; i += 1) {
         const arg = argv[i];
-        if (arg === "--dedicated") {
-            dedicated = true;
-        } else if (arg === "--app-path") {
-            appPath = argv[++i] || "";
-        } else if (arg === "--url") {
-            resourceURL = argv[++i] || "";
-        } else if (arg === "--window-id") {
-            windowID = Number(argv[++i]);
-        } else if (arg === "--enabled") {
-            const flag = argv[++i];
-            if (!["true", "false"].includes(flag)) usage();
-            enabled = flag === "true";
-        } else if (arg === "--app") {
+        if (arg === "--app") {
             appName = argv[i + 1] || "";
             i += 1;
         } else if (arg === "--pid") {
@@ -130,23 +105,6 @@ function parseArgs(argv) {
     }
 
     const requiresAppOrPid = command === "place" || command === "move";
-    if (command === "tool-open") {
-        if (!path.isAbsolute(appPath) || !appPath.endsWith(".app")) usage();
-        if (resourceURL) {
-            let url;
-            try { url = new URL(resourceURL); } catch { usage(); }
-            if (!["file:", "http:", "https:"].includes(url.protocol)) usage();
-        }
-        return { command, appPath, dedicated, ...(resourceURL ? { url: resourceURL } : {}), format: "json" };
-    }
-    if (command === "tool-place") {
-        if (!Number.isInteger(pid) || pid <= 0 || !Number.isInteger(windowID) || windowID <= 0) usage();
-        return { command, pid, windowID, format: "json" };
-    }
-    if (command === "tool-routing") {
-        if (enabled === null) usage();
-        return { command, enabled, format: "json" };
-    }
     if (requiresAppOrPid &&
         (appName ? 1 : 0) + (Number.isFinite(pid) && pid > 0 ? 1 : 0) !== 1) {
         usage();
@@ -407,7 +365,7 @@ function connectAndSend(payload) {
         });
         socket.on("end", () => {
             if (!settled) {
-                const err = new Error("No response from dock-switch; inspect tool-status before retrying");
+                const err = new Error("No response from dock-switch; check application state before retrying");
                 err.requestMayHaveRun = sent;
                 reject(err);
             }

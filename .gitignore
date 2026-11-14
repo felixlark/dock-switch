@@ -6,7 +6,8 @@ node_modules
 dist
 output/
 release/
-bin/
+bin/*
+!bin/dock-switch-cli.js
 native/dock-query/build
 native/dock-switch-app/.build/
 native/settings-app/build

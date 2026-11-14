@@ -9,9 +9,6 @@ struct DockSwitchSettingsApp: App {
             SettingsRootView()
                 .environmentObject(store)
                 .frame(minWidth: 840, minHeight: 560)
-                .onAppear {
-                    NSApp.activate(ignoringOtherApps: true)
-                }
         }
         .windowStyle(.titleBar)
         .commands {

@@ -1,6 +1,6 @@
 {
     "name": "dock-switch",
-    "version": "1.0.2",
+    "version": "1.1.0",
     "description": "dock-switch",
     "author": "Longbiao CHEN",
     "main": "src/main.js",
@@ -20,11 +20,11 @@
         "test": "node --test test/*.test.js && swift test --package-path native/dock-switch-app --scratch-path \"$HOME/Library/Caches/dock-switch/swift-test\" --cache-path \"$HOME/Library/Caches/dock-switch/swift-cache\"",
         "karabiner:f20": "node scripts/configure-karabiner-f20-shortcuts.js",
         "karabiner:f20:check": "node scripts/configure-karabiner-f20-shortcuts.js --check",
-        "build:settings": "bash scripts/build-settings-app.sh",
-        "build:native": "bash scripts/build-native-app.sh",
+        "build:settings": "/bin/bash scripts/build-settings-app.sh",
+        "build:native": "/bin/bash scripts/build-native-app.sh",
         "build:addon": "PYTHON=/usr/bin/python3 node-gyp rebuild --directory native/dock-query --target=$(node -p \"require('electron/package.json').version\") --dist-url=https://electronjs.org/headers",
         "go": "yarn build:addon; killall -9 dock-switch; electron .",
-        "dist": "yarn build:settings && yarn build:native && bash scripts/install-native-app.sh",
+        "dist": "yarn build:settings && yarn build:native && /bin/bash scripts/install-native-app.sh",
         "dist:signed": "yarn build:settings && yarn build:addon && CSC_NAME='Apple Development: LONGBIAO CHEN (YRQ5DV25KM)' electron-builder --mac dir"
     },
     "license": "MIT",

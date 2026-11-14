@@ -5,7 +5,7 @@ import QuartzCore
 import SwiftUI
 
 @main
-final class DockSwitchApp: NSObject, NSApplicationDelegate, NSMenuItemValidation {
+final class DockSwitchApp: NSObject, NSApplicationDelegate {
     private static var sharedDelegate: DockSwitchApp?
     private let configStore = ConfigStore()
     private let customPhrases = CustomPhraseController()
@@ -14,7 +14,6 @@ final class DockSwitchApp: NSObject, NSApplicationDelegate, NSMenuItemValidation
     private let dockVisibilityService = DockVisibilityService()
     private let overlayLayoutService = OverlayLayoutService()
     private let windowPlacementService = WindowPlacementService()
-    private let toolWindows = ToolWindowRouter()
     private let mouseFeedbackPresenter = MouseFeedbackPresenter()
     private lazy var codexDisplaySelectionService = CodexDisplaySelectionService(
         showMouseFeedback: { [weak self] point in
@@ -57,12 +56,10 @@ final class DockSwitchApp: NSObject, NSApplicationDelegate, NSMenuItemValidation
         startControlServer()
         startGokit5SerialListener()
         _ = ensureAccessibilityPermission(prompt: true)
-        toolWindows.start()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
         customPhrases.stop()
-        toolWindows.stop()
         hideLauncher()
         if let hotKeyRef { UnregisterEventHotKey(hotKeyRef) }
         if let eventHandler { RemoveEventHandler(eventHandler) }
@@ -89,11 +86,6 @@ final class DockSwitchApp: NSObject, NSApplicationDelegate, NSMenuItemValidation
         let menu = NSMenu()
         menu.addItem(NSMenuItem(title: "Show Launcher", action: #selector(showLauncherMenu), keyEquivalent: ""))
         menu.addItem(NSMenuItem(title: "Settings...", action: #selector(openSettings), keyEquivalent: ","))
-        let quiet = NSMenuItem(title: "工具窗口集中到右屏", action: #selector(toggleToolWindows(_:)), keyEquivalent: "")
-        quiet.state = toolWindows.enabled ? .on : .off
-        menu.addItem(quiet)
-        menu.addItem(NSMenuItem(title: "当前窗口保留原位", action: #selector(exemptToolWindow), keyEquivalent: ""))
-        menu.addItem(NSMenuItem(title: "找回屏外工具窗口", action: #selector(recoverToolWindows), keyEquivalent: ""))
         menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: "Quit", action: #selector(quit), keyEquivalent: "q"))
         statusItem?.menu = menu
@@ -118,17 +110,6 @@ final class DockSwitchApp: NSObject, NSApplicationDelegate, NSMenuItemValidation
 
     @objc private func quit() {
         NSApp.terminate(nil)
-    }
-
-    @objc private func toggleToolWindows(_ item: NSMenuItem) {
-        toolWindows.setEnabled(!toolWindows.enabled)
-        item.state = toolWindows.enabled ? .on : .off
-    }
-    @objc private func exemptToolWindow() { toolWindows.exemptFocused() }
-    @objc private func recoverToolWindows() { toolWindows.recover() }
-    func validateMenuItem(_ item: NSMenuItem) -> Bool {
-        if item.action == #selector(toggleToolWindows(_:)) { item.state = toolWindows.enabled ? .on : .off }
-        return true
     }
 
     private func startControlServer() {
@@ -157,10 +138,6 @@ final class DockSwitchApp: NSObject, NSApplicationDelegate, NSMenuItemValidation
                     return ["enabled": false, "status": "disabled", "running": false, "portPath": ""]
                 }
                 return listener.snapshot().json()
-            },
-            toolCommand: { [weak self] command in
-                guard let self else { return ["ok": false, "error": "Runtime unavailable"] }
-                return self.runOnMain { self.toolWindows.command(command) }
             },
             selectCodexDisplay: { [weak self] command in
                 guard let self else { return ["ok": false, "error": "dock-switch runtime is not ready"] }

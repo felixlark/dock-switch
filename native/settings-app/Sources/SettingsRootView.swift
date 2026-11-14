@@ -183,7 +183,7 @@ struct SettingsRowView: View {
                     .fontWeight(.medium)
                     .lineLimit(1)
                 if row.fallback {
-                    Text("不保存时继续使用自动数字键")
+                    Text("自动数字键；屏幕和位置可独立保存")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

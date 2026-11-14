@@ -12,6 +12,20 @@
 
 See the [Sphinx documentation](docs/index.rst) and the [shortcut verification guide](docs/shortcut-verification.rst) for additional detail.
 
+## Settings app
+
+Screen and placement preferences can be saved without assigning a launcher key.
+These apps continue to use automatically allocated numeric keys, which avoid
+explicit numeric assignments. Reopening Settings retains the saved placement.
+The Settings app uses a dedicated split-window and sliders icon; regenerate its
+PNG preview and complete ICNS set with `bash scripts/generate-settings-icon.sh`.
+
+Codex dual-Shift appshots are provided by Codex's Computer Use service. If its
+capture log reports `start_request_failed:computer_use:-1743`, the shortcut has
+reached the service but an Apple Events operation was denied. Check the actual
+permission request and responsible application; do not reset unrelated privacy
+permissions or alter launcher Shift mappings to work around this error.
+
 ## Codex Plus
 
 Codex workspace enhancements are maintained by the standalone

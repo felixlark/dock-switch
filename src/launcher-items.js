@@ -111,11 +111,10 @@ function buildLauncherItems(dockItems, configDockItems) {
             });
         }
         if (item == undefined) {
-            item = {
+            item = Object.assign({ screen: "" }, configItem, {
                 name: visibleItems[i].name,
-                key: nextFallbackKey(),
-                screen: ""
-            };
+                key: nextFallbackKey()
+            });
         }
         launcherItems.push({
             item,

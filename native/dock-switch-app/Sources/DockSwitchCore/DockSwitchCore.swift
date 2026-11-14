@@ -650,10 +650,10 @@ public enum LauncherRules {
                 name: dockItem.name,
                 key: "\(fallbackKey)",
                 icon: nil,
-                kind: nil,
-                placement: nil,
-                openPath: nil,
-                appURL: nil,
+                kind: configured?.kind,
+                placement: configured?.placement,
+                openPath: configured?.openPath,
+                appURL: configured?.appURL,
                 dockItem: dockItem
             )
         }

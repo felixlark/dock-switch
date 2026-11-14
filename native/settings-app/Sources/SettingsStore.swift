@@ -148,7 +148,7 @@ final class SettingsStore: ObservableObject {
     private func validationError() -> String? {
         var byKey: [String: [String]] = [:]
         for row in rows where !row.readonly {
-            let key = normalizeLauncherKey(row.key)
+            let key = outputKey(for: row)
             if key.isEmpty { continue }
             if isReservedSettingsKey(key, for: row.name) {
                 return "\(key) 是系统保留键"
@@ -164,6 +164,7 @@ final class SettingsStore: ObservableObject {
     private func buildRows(dockItems: [[String: Any]], config: [String: Any]) -> [SettingsRow] {
         let configItems = config["dock_items"] as? [[String: Any]] ?? []
         let sortedDockItems = visibleDockItems(dockItems)
+        let assignedKeys = Set(configItems.compactMap { $0["key"] as? String }.map(normalizeLauncherKey).filter { !$0.isEmpty })
         var fallbackKey = 1
         var result: [SettingsRow] = []
 
@@ -172,7 +173,7 @@ final class SettingsStore: ObservableObject {
             let configItem = configItems.first { normalizeAppName($0["name"] as? String ?? "") == normalizeAppName(name) }
             let defaultItem = defaultSettingsItem(for: name)
             if let configItem,
-               defaultItem != nil || !(configItem["key"] as? String ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+               defaultItem != nil || !normalizeLauncherKey(configItem["key"] as? String ?? "").isEmpty {
                 let configuredKey = configItem["key"] as? String ?? ""
                 let placement = configItem["placement"] as? String ?? ""
                 let parsedPlacement = parsePlacement(placement)
@@ -193,15 +194,19 @@ final class SettingsStore: ObservableObject {
             } else if let defaultItem {
                 result.append(defaultItem)
             } else {
+                while assignedKeys.contains("\(fallbackKey)") { fallbackKey += 1 }
+                let placement = configItem?["placement"] as? String ?? ""
+                let parsed = parsePlacement(placement)
+                let screen = normalizeScreenValue(configItem?["screen"] as? String ?? parsed.screen)
                 result.append(SettingsRow(
                     id: name,
                     name: name,
                     key: "\(fallbackKey)",
                     displayKey: "\(fallbackKey)",
-                    screen: "",
-                    position: "",
-                    placement: "",
-                    status: .fallback,
+                    screen: screen,
+                    position: parsed.position,
+                    placement: placement,
+                    status: screen.isEmpty && placement.isEmpty ? .fallback : .configured,
                     readonly: false,
                     configured: false,
                     fallback: true

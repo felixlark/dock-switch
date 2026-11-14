@@ -3,6 +3,20 @@ import XCTest
 @testable import DockSwitchCore
 
 final class DockSwitchCoreTests: XCTestCase {
+    func testPlacementOnlyAppRetainsMetadataAndAutomaticKey() {
+        let config = LauncherConfig(dockItems: [
+            LauncherConfigItem(name: "WorkBuddy", key: nil, screen: "side_right", kind: "web_app", placement: "side_right_right_half", openPath: "/Applications/WorkBuddy.app", appURL: "https://example.com"),
+            LauncherConfigItem(name: "Other", key: "1", screen: nil, kind: nil, placement: nil, openPath: nil, appURL: nil)
+        ])
+        let dock = DockItemSnapshot(name: "WorkBuddy", pos: .zero, size: .zero)
+        let item = LauncherRules.buildLauncherItems(dockItems: [dock], config: config)[0]
+        XCTAssertEqual(item.key, "2")
+        XCTAssertEqual(item.placement, "side_right_right_half")
+        XCTAssertEqual(item.kind, "web_app")
+        XCTAssertEqual(item.openPath, "/Applications/WorkBuddy.app")
+        XCTAssertEqual(item.appURL, "https://example.com")
+    }
+
     func testFeishuLocalizedDockNamesKeepFShortcutAndPlacement() {
         let config = LauncherConfig(dockItems: [
             LauncherConfigItem(name: "Feishu", key: "F", screen: "1", kind: nil, placement: "internal_fill", openPath: nil, appURL: nil)

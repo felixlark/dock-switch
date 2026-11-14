@@ -650,10 +650,10 @@ public enum LauncherRules {
                 name: dockItem.name,
                 key: "\(fallbackKey)",
                 icon: nil,
-                kind: nil,
-                placement: nil,
-                openPath: nil,
-                appURL: nil,
+                kind: configured?.kind,
+                placement: configured?.placement,
+                openPath: configured?.openPath,
+                appURL: configured?.appURL,
                 dockItem: dockItem
             )
         }
@@ -2118,7 +2118,6 @@ public final class ControlServer {
     private let hideLauncher: () -> Bool
     private let showMouseFeedback: (CGPoint) -> Void
     private let getGokit5Status: () -> [String: Any]
-    private let getCodexWorkspaceStatus: () -> [String: Any]
     private let selectCodexDisplay: ([String: Any]) -> [String: Any]
     private let launcherService: LauncherService
 
@@ -2129,7 +2128,6 @@ public final class ControlServer {
         hideLauncher: @escaping () -> Bool,
         showMouseFeedback: @escaping (CGPoint) -> Void = { _ in },
         getGokit5Status: @escaping () -> [String: Any] = { ["enabled": false, "status": "unavailable", "running": false] },
-        getCodexWorkspaceStatus: @escaping () -> [String: Any] = { ["observing": false] },
         selectCodexDisplay: @escaping ([String: Any]) -> [String: Any] = { _ in ["ok": false, "error": "select-codex-display is unavailable"] }
     ) {
         self.displayService = displayService
@@ -2138,7 +2136,6 @@ public final class ControlServer {
         self.hideLauncher = hideLauncher
         self.showMouseFeedback = showMouseFeedback
         self.getGokit5Status = getGokit5Status
-        self.getCodexWorkspaceStatus = getCodexWorkspaceStatus
         self.selectCodexDisplay = selectCodexDisplay
         self.launcherService = LauncherService(windowPlacement: windowPlacement, showMouseFeedback: showMouseFeedback)
     }
@@ -2226,8 +2223,6 @@ public final class ControlServer {
             return showLauncher() ? ["ok": true] : ["ok": false, "error": "Failed to show launcher"]
         case "hide-launcher":
             return hideLauncher() ? ["ok": true] : ["ok": false, "error": "Failed to hide launcher"]
-        case "codex-workspace-status":
-            return ["ok": true, "codexWorkspace": getCodexWorkspaceStatus()]
         case "gokit5-status":
             return ["ok": true, "gokit5": getGokit5Status()]
         case "select-codex-display":

@@ -147,15 +147,18 @@ test("buildLauncherItems renders special app labels and preserves fallback numer
     );
 });
 
-test("buildLauncherItems ignores config entries without keys so fallback keys still work", () => {
+test("buildLauncherItems preserves placement-only metadata while assigning fallback keys", () => {
     const dockItems = [
         { name: "X", pos: { x: 10, y: 0 } }
     ];
     const configDockItems = [
-        { name: "X", screen: "1", kind: "web_app", app_url: "https://x.com/" }
+        { name: "X", screen: "1", placement: "internal_fill", kind: "web_app", app_url: "https://x.com/" }
     ];
 
     const launcherItems = buildLauncherItems(dockItems, configDockItems);
+    assert.equal(launcherItems[0].item.placement, "internal_fill");
+    assert.equal(launcherItems[0].item.app_url, "https://x.com/");
+    assert.equal(launcherItems[0].item.kind, "web_app");
 
     assert.deepEqual(
         launcherItems.map(entry => ({ name: entry.item.name, key: entry.item.key })),

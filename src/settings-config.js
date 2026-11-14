@@ -95,6 +95,7 @@ function isReservedSettingsKey(key, name) {
 function buildSettingsRows(dockItems, config) {
     const configDockItems = normalizeConfig(config).dock_items;
     const rows = [];
+    const assignedKeys = new Set(configDockItems.map(item => normalizeEditableKey(item.key)).filter(Boolean));
     let fallbackKey = 1;
 
     for (const dockItem of visibleDockItems(dockItems)) {
@@ -135,13 +136,14 @@ function buildSettingsRows(dockItems, config) {
             continue;
         }
 
+        while (assignedKeys.has(String(fallbackKey))) fallbackKey += 1;
         rows.push({
             name: dockItem.name,
             key: String(fallbackKey++),
             displayKey: String(fallbackKey - 1),
-            screen: "",
-            placement: "",
-            status: "fallback",
+            screen: String(configItem && configItem.screen || ""),
+            placement: String(configItem && configItem.placement || ""),
+            status: configItem && (configItem.screen || configItem.placement) ? "configured" : "fallback",
             readonly: false,
             configured: false,
             fallback: true

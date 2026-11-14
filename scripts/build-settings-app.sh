@@ -12,7 +12,8 @@ DEFAULT_IDENTITY="Developer ID Application: LONGBIAO CHEN (HJG65XBC25)"
 IDENTITY="${CSC_NAME:-$DEFAULT_IDENTITY}"
 
 rm -rf "$APP_DIR"
-mkdir -p "$MACOS_DIR" "$MODULE_CACHE"
+mkdir -p "$MACOS_DIR" "$MODULE_CACHE" "$CONTENTS_DIR/Resources"
+cp "$ROOT_DIR/resources/settings.icns" "$CONTENTS_DIR/Resources/settings.icns"
 
 swiftc \
   -module-cache-path "$MODULE_CACHE" \
@@ -39,6 +40,8 @@ cat > "$CONTENTS_DIR/Info.plist" <<'PLIST'
     <string>6.0</string>
     <key>CFBundleName</key>
     <string>Dock Switch Settings</string>
+    <key>CFBundleIconFile</key>
+    <string>settings</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleSupportedPlatforms</key>

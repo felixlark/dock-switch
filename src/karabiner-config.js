@@ -17,20 +17,6 @@ function shellCommand(parts) {
     return parts.map(part => `'${part.replace(/'/g, "'\\''")}'`).join(" ");
 }
 
-function directAppCommand(appName, placement) {
-    return shellCommand([
-        "/bin/zsh",
-        "-lc",
-        [
-            `APP_NAME=${appName}`,
-            "NODE=/opt/homebrew/bin/node",
-            "CLI=/Applications/dock-switch.app/Contents/Resources/app/bin/dock-switch-cli.js",
-            "/usr/bin/open -a \"$APP_NAME\" >/dev/null 2>&1",
-            `[[ -x "$NODE" && -f "$CLI" ]] && "$NODE" "$CLI" place --app "$APP_NAME" --placement ${placement} >/dev/null 2>&1 &`
-        ].join("; ")
-    ]);
-}
-
 const SMARTSHADOW_DIRECT_COMMAND = shellCommand([
     "/bin/zsh",
     "-lc",
@@ -42,7 +28,10 @@ const SMARTSHADOW_DIRECT_COMMAND = shellCommand([
         "[[ -x \"$NODE\" && -f \"$CLI\" ]] && \"$NODE\" \"$CLI\" place --app SmartShadow --placement side_left_fill >/dev/null 2>&1 &"
     ].join("; ")
 ]);
-const CHATGPT_DIRECT_COMMAND = directAppCommand("ChatGPT", "side_right_fill");
+// Plus opens the signed host and requests placement by its exact PID after launch.
+const CODEX_PLUS_COMMAND = shellCommand([
+    "/usr/bin/open", "/Applications/Codex Plus.app", "--args", "--open-codex"
+]);
 
 function fromKeyCode(keyCode) {
     return {
@@ -87,12 +76,12 @@ function buildDockSwitchKarabinerRule() {
             {
                 type: "basic",
                 from: fromKeyCode("f6"),
-                to: [{ shell_command: CHATGPT_DIRECT_COMMAND }]
+                to: [{ shell_command: CODEX_PLUS_COMMAND }]
             },
             {
                 type: "basic",
                 from: fromMandatoryFnKeyCode("f5"),
-                to: [{ shell_command: CHATGPT_DIRECT_COMMAND }]
+                to: [{ shell_command: CODEX_PLUS_COMMAND }]
             },
             {
                 type: "basic",
@@ -100,7 +89,7 @@ function buildDockSwitchKarabinerRule() {
                     generic_desktop: "do_not_disturb",
                     modifiers: { optional: ["any"] }
                 },
-                to: [{ shell_command: CHATGPT_DIRECT_COMMAND }]
+                to: [{ shell_command: CODEX_PLUS_COMMAND }]
             }
         ]
     };
@@ -162,7 +151,7 @@ function managedFunctionKeyEntry(keyCode) {
     if (keyCode === "f6") {
         return {
             from: { key_code: keyCode },
-            to: [{ shell_command: CHATGPT_DIRECT_COMMAND }]
+            to: [{ shell_command: CODEX_PLUS_COMMAND }]
         };
     }
     return {
@@ -294,7 +283,7 @@ function writeKarabinerConfig(config, configPath = defaultKarabinerConfigPath())
 
 module.exports = {
     DOCK_SWITCH_RULE_DESCRIPTION,
-    CHATGPT_DIRECT_COMMAND,
+    CODEX_PLUS_COMMAND,
     LOGITECH_TOP_ROW_CONSUMER_DEVICE,
     SMARTSHADOW_DIRECT_COMMAND,
     applyDockSwitchKarabinerConfig,

@@ -219,7 +219,7 @@ test("saveDockItemSettings clears an existing key without deleting advanced app 
         open_path: "~/Applications/Chromium Apps.localized/X.app",
         app_url: "https://x.com/?utm_source=homescreen&utm_medium=shortcut"
     });
-    assert.deepEqual(buildSettingsRows(dockItems, result.config).map(row => row.status), ["fallback"]);
+    assert.deepEqual(buildSettingsRows(dockItems, result.config).map(row => row.status), ["configured"]);
 });
 
 test("saveDockItemSettings creates a visible fallback app when screen or placement is configured", () => {
@@ -255,4 +255,17 @@ test("saveDockItemSettings persists a user key that replaces an automatic fallba
         { name: "WeChat", key: "W" }
     ]);
     assert.equal(buildSettingsRows(dockItems, result.config)[0].status, "configured");
+});
+
+
+test("placement-only settings survive reload without assigning their automatic key", () => {
+    const dock = [{ name: "WorkBuddy", pos: { x: 10 } }, { name: "Other", pos: { x: 20 } }];
+    const config = { dock_items: [{ name: "Other", key: "1" }] };
+    const saved = saveDockItemSettings(config, dock, [{ name: "WorkBuddy", key: "", screen: "side_right", placement: "side_right_right_half" }]);
+    const row = buildSettingsRows(dock, saved.config)[0];
+    assert.equal(row.key, "2");
+    assert.equal(row.screen, "side_right");
+    assert.equal(row.placement, "side_right_right_half");
+    assert.equal(row.configured, false);
+    assert.equal(saved.config.dock_items.find(item => item.name === "WorkBuddy").key, undefined);
 });

@@ -102,7 +102,53 @@ dock-switch-cli gokit5-status
 
 `displays` reports current display bounds and work areas as JSON. `place` accepts an application name or PID and a supported placement; `move` accepts an application name or PID and explicit bounds. `codex-display` targets a symbolic display (`side_left`, `external`, `side_right`, or `internal`). `get-chrome-window` and `move-chrome-window` require `--profile-dir` and operate on that Chrome profile. Run `dock-switch-cli` without arguments for the complete command syntax. When the control socket is not running, the CLI attempts to launch `/Applications/dock-switch.app`.
 
-## Configuration
+## Quiet tool windows
+
+Version 1.1.0 adds background tool opening and per-window placement in the existing
+native Dock Switch process. Codex keeps its saved launcher placement. Identified
+independent tool windows go to the selected rightmost external display without
+activation, raising, pointer movement, Space changes, or forced fullscreen exit.
+The display is remembered by system identity; disconnecting it does not silently
+send tools to the internal display. The status menu provides **工具窗口集中到右屏**,
+**当前窗口保留原位**, and **找回屏外工具窗口**.
+
+Open the installed Settings tool in the background:
+
+```sh
+node /Applications/dock-switch.app/Contents/Resources/app/bin/dock-switch-cli.js tool-open --app-path /Applications/dock-switch.app/Contents/Resources/DockSwitchSettings.app
+```
+
+Inspect the current result:
+
+```sh
+node /Applications/dock-switch.app/Contents/Resources/app/bin/dock-switch-cli.js tool-status
+```
+
+`tool-open` also accepts `--url` for a file or web resource. An ordinary app never
+gets a process-wide window rule just because it was launched. File resources use
+exact public document identity and exclude every manual window present before
+the request. Reuse as an existing window/tab consumes the request without moving
+that window. Web resources and other unidentifiable windows require `tool-place`
+with an explicit PID and public window ID. Use `--dedicated` only for an app that
+exists exclusively as an agent tool, since its future windows then belong to the
+tool session. Known Settings/utility apps already have dedicated rules.
+
+The request acknowledgement proves only that an open was requested. `tool-status`
+distinguishes waiting, placed, already managed, existing-window reuse, lack of a
+window rule, and observation failure. A lost response after sending a command is
+reported as unknown and is never automatically replayed. Pausing removes window
+observers; handled windows are not pulled back after manual moves. Recovery acts
+only on managed offscreen windows and is explicitly requested.
+
+Normal user launcher actions still activate apps intentionally. Tool opening uses
+`NSWorkspace.OpenConfiguration.activates=false`; tools that activate themselves
+need to be fixed at their own entry. Sheets, in-window web overlays and system
+permission dialogs retain their normal owners. Real foreground keyboard/mouse
+automation is still shared with the user.
+
+Design and acceptance scope: [quiet tool windows](docs/designs/quiet-tool-windows.md).
+
+## Launcher configuration
 
 App shortcuts and display placement are configured in `src/config.json` under `dock_items`. Prefer symbolic display names and placement values rather than numeric display indexes, which vary by machine. For example:
 

@@ -28,9 +28,9 @@ const SMARTSHADOW_DIRECT_COMMAND = shellCommand([
         "[[ -x \"$NODE\" && -f \"$CLI\" ]] && \"$NODE\" \"$CLI\" place --app SmartShadow --placement side_left_fill >/dev/null 2>&1 &"
     ].join("; ")
 ]);
-// Plus opens the signed host and requests placement by its exact PID after launch.
-const CODEX_PLUS_COMMAND = shellCommand([
-    "/usr/bin/open", "/Applications/Codex Plus.app", "--args", "--open-codex"
+// SmartShadow routes the request to the signed interaction helper.
+const CODEX_OPEN_COMMAND = shellCommand([
+    "/Applications/SmartShadow.app/Contents/MacOS/SmartShadowManager", "--open-codex"
 ]);
 
 function fromKeyCode(keyCode) {
@@ -76,12 +76,12 @@ function buildDockSwitchKarabinerRule() {
             {
                 type: "basic",
                 from: fromKeyCode("f6"),
-                to: [{ shell_command: CODEX_PLUS_COMMAND }]
+                to: [{ shell_command: CODEX_OPEN_COMMAND }]
             },
             {
                 type: "basic",
                 from: fromMandatoryFnKeyCode("f5"),
-                to: [{ shell_command: CODEX_PLUS_COMMAND }]
+                to: [{ shell_command: CODEX_OPEN_COMMAND }]
             },
             {
                 type: "basic",
@@ -89,7 +89,7 @@ function buildDockSwitchKarabinerRule() {
                     generic_desktop: "do_not_disturb",
                     modifiers: { optional: ["any"] }
                 },
-                to: [{ shell_command: CODEX_PLUS_COMMAND }]
+                to: [{ shell_command: CODEX_OPEN_COMMAND }]
             }
         ]
     };
@@ -151,7 +151,7 @@ function managedFunctionKeyEntry(keyCode) {
     if (keyCode === "f6") {
         return {
             from: { key_code: keyCode },
-            to: [{ shell_command: CODEX_PLUS_COMMAND }]
+            to: [{ shell_command: CODEX_OPEN_COMMAND }]
         };
     }
     return {
@@ -283,7 +283,7 @@ function writeKarabinerConfig(config, configPath = defaultKarabinerConfigPath())
 
 module.exports = {
     DOCK_SWITCH_RULE_DESCRIPTION,
-    CODEX_PLUS_COMMAND,
+    CODEX_OPEN_COMMAND,
     LOGITECH_TOP_ROW_CONSUMER_DEVICE,
     SMARTSHADOW_DIRECT_COMMAND,
     applyDockSwitchKarabinerConfig,

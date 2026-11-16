@@ -18,8 +18,8 @@
 # -- Project information -----------------------------------------------------
 
 project = 'dock-switch'
-copyright = '2020-2026, @felixlark'
-author = '@felixlark'
+copyright = '2020-2026, felixlark'
+author = 'felixlark'
 
 
 # -- General configuration ---------------------------------------------------

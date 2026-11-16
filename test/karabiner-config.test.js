@@ -18,34 +18,34 @@ function directLegacyRule() {
             {
                 type: "basic",
                 from: { key_code: "f3", modifiers: { optional: ["any"] } },
-                to: [{ shell_command: "/Users/longbiao/bin/open-hotkey-app.sh smartshadow >/dev/null 2>&1" }]
+                to: [{ shell_command: "/Users/example/bin/open-hotkey-app.sh smartshadow >/dev/null 2>&1" }]
             },
             {
                 type: "basic",
                 from: { consumer_key_code: "mission_control", modifiers: { optional: ["any"] } },
-                to: [{ shell_command: "/Users/longbiao/bin/open-hotkey-app.sh smartshadow >/dev/null 2>&1" }]
+                to: [{ shell_command: "/Users/example/bin/open-hotkey-app.sh smartshadow >/dev/null 2>&1" }]
             },
             {
                 type: "basic",
                 from: { apple_vendor_keyboard_key_code: "mission_control", modifiers: { optional: ["any"] } },
-                to: [{ shell_command: "/Users/longbiao/bin/open-hotkey-app.sh smartshadow >/dev/null 2>&1" }]
+                to: [{ shell_command: "/Users/example/bin/open-hotkey-app.sh smartshadow >/dev/null 2>&1" }]
             },
             {
                 type: "basic",
                 from: { key_code: "f6", modifiers: { optional: ["any"] } },
-                to: [{ shell_command: "/Users/longbiao/bin/open-hotkey-app.sh chatgpt >/dev/null 2>&1" }]
+                to: [{ shell_command: "/Users/example/bin/open-hotkey-app.sh chatgpt >/dev/null 2>&1" }]
             },
             {
                 type: "basic",
                 from: { key_code: "left_shift", modifiers: { optional: ["any"] } },
                 to: [{ key_code: "left_shift" }],
-                to_if_alone: [{ shell_command: "/Users/longbiao/bin/open-hotkey-app.sh codex >/dev/null 2>&1" }]
+                to_if_alone: [{ shell_command: "/Users/example/bin/open-hotkey-app.sh codex >/dev/null 2>&1" }]
             },
             {
                 type: "basic",
                 from: { key_code: "right_shift", modifiers: { optional: ["any"] } },
                 to: [{ key_code: "right_shift" }],
-                to_if_alone: [{ shell_command: "/Users/longbiao/bin/open-hotkey-app.sh claude >/dev/null 2>&1" }]
+                to_if_alone: [{ shell_command: "/Users/example/bin/open-hotkey-app.sh claude >/dev/null 2>&1" }]
             }
         ]
     };
@@ -75,7 +75,7 @@ test("applyDockSwitchKarabinerProfile keeps F3 and F6 direct while removing Shif
             rules: [
                 directLegacyRule(),
                 {
-                    description: "Longbiao's Tweaks",
+                    description: "Example Tweaks",
                     manipulators: [
                         {
                             type: "basic",
@@ -122,7 +122,7 @@ test("applyDockSwitchKarabinerProfile keeps F3 and F6 direct while removing Shif
         false
     );
     assert.deepEqual(
-        profile.complex_modifications.rules.find(rule => rule.description === "Longbiao's Tweaks").manipulators.map(manipulator => manipulator.from.key_code),
+        profile.complex_modifications.rules.find(rule => rule.description === "Example Tweaks").manipulators.map(manipulator => manipulator.from.key_code),
         ["d", "f5"]
     );
     assert.deepEqual(profile.simple_modifications, []);

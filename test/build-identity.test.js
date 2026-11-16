@@ -103,3 +103,27 @@ with tempfile.TemporaryDirectory() as temp:
     const result = spawnSync('python3', ['-c', code], { encoding: 'utf8' });
     assert.equal(result.status, 0, result.stderr);
 });
+
+
+test('Apple atomic directory exchange retains complete bundles and supports rollback', () => {
+    if (process.platform !== 'darwin') return;
+    const code = `
+import importlib.util,tempfile,sys
+from pathlib import Path
+sys.dont_write_bytecode=True
+spec=importlib.util.spec_from_file_location('installer','scripts/install-native-app.py')
+m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
+with tempfile.TemporaryDirectory() as temp:
+ live=Path(temp)/'live.app'; stage=Path(temp)/'stage.app'
+ for app,value in ((live,b'original complete bundle'),(stage,b'candidate complete bundle')):
+  (app/'Contents').mkdir(parents=True);(app/'Contents/payload').write_bytes(value)
+ m.atomic_swap(stage,live)
+ assert (live/'Contents/payload').read_bytes()==b'candidate complete bundle'
+ assert (stage/'Contents/payload').read_bytes()==b'original complete bundle'
+ m.atomic_swap(stage,live)
+ assert (live/'Contents/payload').read_bytes()==b'original complete bundle'
+ assert (stage/'Contents/payload').read_bytes()==b'candidate complete bundle'
+`;
+    const result = spawnSync('python3', ['-c', code], { encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr);
+});

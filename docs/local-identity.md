@@ -74,14 +74,24 @@ without activation. Obtain a fresh snapshot and rebuild after checking the write
 
 Installation refuses to stop an already running Settings process, preserving any
 unsaved in-memory draft. Review and close Settings before installing. The lifecycle
-helper rechecks this at the actual stop boundary. Normal termination targets only
-the exact installed main bundle path.
-If they do not stop within 15 seconds, replacement is refused; no forced kill is
-used. A private backup is retained under the external install cache. A failed
-replacement restores the prior bundle and reopens the previously running app.
-After replacement the configuration digest and new signature seal are checked.
-The installer does not reset permissions, change hotkeys, migrate preferences or
-read phrase content.
+helper rechecks this at the actual stop boundary. Installation requires one
+operator, no other writer and no pending Settings launch; these checks do not
+claim to intercept arbitrary uncoordinated external launches. Normal termination
+targets only the exact installed main bundle path. Stopping waits without a
+deadline by default and never force-kills a process. An operator may explicitly
+set `--stop-timeout-seconds` (or `DOCK_SWITCH_STOP_TIMEOUT_SECONDS`) to a positive
+number; reaching it refuses replacement. A newly observed Settings process is
+preserved and stops the install.
+
+The complete final bundle is staged and verified in a private temporary sibling
+under `/Applications` before stopping. Existing installations switch with Apple's
+public `renameatx_np(RENAME_SWAP)` operation, retaining the complete old bundle for
+atomic rollback. First installation uses a same-volume atomic rename; a copy is
+never performed into the live app path. A private backup is also retained under
+the external install cache. A failed post-switch check swaps the old bundle back
+and reopens the previously running app. After replacement the configuration
+digest and new signature seal are checked. The installer does not reset
+permissions, change hotkeys, migrate preferences or read phrase content.
 
 Some existing bundles have an invalid seal because Settings can save configuration
 inside the bundle. That is an existing architecture limitation. It is recorded as

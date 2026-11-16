@@ -2,7 +2,7 @@
     "name": "dock-switch",
     "version": "1.1.1",
     "description": "dock-switch",
-    "author": "@felixlark",
+    "author": "felixlark",
     "main": "src/main.js",
     "bin": {
         "dock-switch-cli": "bin/dock-switch-cli.js"

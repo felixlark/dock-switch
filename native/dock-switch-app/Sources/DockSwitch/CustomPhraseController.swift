@@ -52,7 +52,7 @@ final class CustomPhraseController {
         settingsExitObserver = NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didTerminateApplicationNotification,
             object: nil, queue: .main) { [weak self] note in
                 if let app = note.userInfo?[NSWorkspace.applicationUserInfoKey] as? NSRunningApplication,
-                   app.bundleIdentifier == "me.longbiaochen.dock-switch.settings" {
+                   app.bundleIdentifier == AppIdentity.settingsBundleIdentifier(in: Bundle.main) {
                     self?.recording = false; self?.configure()
                 }
             }

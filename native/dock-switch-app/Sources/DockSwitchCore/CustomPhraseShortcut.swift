@@ -19,11 +19,11 @@ public struct CustomPhraseShortcut: Codable, Equatable {
     public static let preferenceKey = "customPhraseShortcut"
     public static let enabledKey = "customPhraseEnabled"
     public static let statusKey = "customPhraseStatus"
-    public static let suiteName = "me.longbiaochen.dock-switch"
-    public static let changed = Notification.Name("me.longbiaochen.dock-switch.customPhraseChanged")
-    public static let statusChanged = Notification.Name("me.longbiaochen.dock-switch.customPhraseStatusChanged")
-    public static let recordingChanged = Notification.Name("me.longbiaochen.dock-switch.customPhraseRecordingChanged")
-    public static let previewRequested = Notification.Name("me.longbiaochen.dock-switch.customPhrasePreviewRequested")
+    public static let suiteName = AppIdentity.current.dataNamespace
+    public static let changed = AppIdentity.current.notification("customPhraseChanged")
+    public static let statusChanged = AppIdentity.current.notification("customPhraseStatusChanged")
+    public static let recordingChanged = AppIdentity.current.notification("customPhraseRecordingChanged")
+    public static let previewRequested = AppIdentity.current.notification("customPhrasePreviewRequested")
     public static let componentFiles = ["encode.py", "wubi86.dict.yaml", "known-phrases.json",
         "db-candidate/append_phrase.py", "db-candidate/schema.json"]
 

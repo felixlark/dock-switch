@@ -17,7 +17,7 @@ func snapshot() -> [String: Any] {
     let source = TISCopyCurrentKeyboardInputSource().takeRetainedValue()
     let sourceID = TISGetInputSourceProperty(source, kTISPropertyInputSourceID)
         .map { Unmanaged<CFString>.fromOpaque($0).takeUnretainedValue() as String } ?? "unknown"
-    let apps = NSRunningApplication.runningApplications(withBundleIdentifier: "me.longbiaochen.dock-switch")
+    let apps = NSWorkspace.shared.runningApplications
         .filter { $0.executableURL?.path == installedExecutable }
     let pids = Set(apps.map { $0.processIdentifier })
     let windows = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]]

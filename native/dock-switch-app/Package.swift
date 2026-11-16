@@ -1,5 +1,8 @@
 // swift-tools-version: 5.9
 import PackageDescription
+import Foundation
+
+let appInfo = ProcessInfo.processInfo.environment["DOCK_SWITCH_APP_INFO_PLIST"] ?? "AppInfo.plist"
 
 let package = Package(
     name: "DockSwitchNative",
@@ -21,7 +24,7 @@ let package = Package(
                     "-Xlinker", "-sectcreate",
                     "-Xlinker", "__TEXT",
                     "-Xlinker", "__info_plist",
-                    "-Xlinker", "AppInfo.plist"
+                    "-Xlinker", appInfo
                 ])
             ]
         ),

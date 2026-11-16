@@ -13,6 +13,7 @@ test('native SettingsStore preserves keyless placement across save and reload', 
         execFileSync('swiftc', ['-module-cache-path', path.join(os.homedir(), 'Library/Caches/dock-switch/settings-modules'),
             '-parse-as-library', 'native/settings-app/Sources/Models.swift', 'native/settings-app/Sources/SettingsStore.swift',
             'native/dock-switch-app/Sources/DockSwitchCore/CustomPhraseShortcut.swift',
+            'native/dock-switch-app/Sources/DockSwitchCore/AppIdentity.swift',
             'native/settings-app/Tests/SettingsStoreChecks.swift', '-o', binary], { stdio: 'pipe' });
         assert.match(execFileSync(binary, { encoding: 'utf8' }), /passed/);
     } finally { fs.rmSync(scratch, { recursive: true, force: true }); }

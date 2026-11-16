@@ -1,93 +1,25 @@
 #!/bin/bash
 set -euo pipefail
-
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+if [[ $# -gt 0 ]]; then
+  [[ $# == 2 && $1 == --identity-profile ]] || { echo 'usage: build-settings-app.sh [--identity-profile /absolute/profile.json]' >&2; exit 1; }
+  export DOCK_SWITCH_IDENTITY_PROFILE="$2"
+fi
 BUILD_ROOT="${DOCK_SWITCH_BUILD_ROOT:-$HOME/Library/Caches/dock-switch/build}"
 MODULE_CACHE="${DOCK_SWITCH_MODULE_CACHE:-$HOME/Library/Caches/dock-switch/settings-modules}"
+IDENTITY_DIR="$BUILD_ROOT/identity"
 APP_DIR="$BUILD_ROOT/settings/DockSwitchSettings.app"
-CONTENTS_DIR="$APP_DIR/Contents"
-MACOS_DIR="$CONTENTS_DIR/MacOS"
 SOURCE_DIR="$ROOT_DIR/native/settings-app/Sources"
-DEFAULT_IDENTITY="Developer ID Application: LONGBIAO CHEN (HJG65XBC25)"
-IDENTITY="${CSC_NAME:-$DEFAULT_IDENTITY}"
-
+python3 "$ROOT_DIR/scripts/build-identity.py" generate --directory "$IDENTITY_DIR"
 rm -rf "$APP_DIR"
-mkdir -p "$MACOS_DIR" "$MODULE_CACHE" "$CONTENTS_DIR/Resources"
-cp "$ROOT_DIR/resources/settings.icns" "$CONTENTS_DIR/Resources/settings.icns"
-
-swiftc \
-  -module-cache-path "$MODULE_CACHE" \
-  -parse-as-library \
-  -O \
-  -framework SwiftUI \
-  -framework AppKit \
+mkdir -p "$APP_DIR/Contents/MacOS" "$MODULE_CACHE" "$APP_DIR/Contents/Resources"
+cp "$ROOT_DIR/resources/settings.icns" "$APP_DIR/Contents/Resources/settings.icns"
+cp "$IDENTITY_DIR/settings.plist" "$APP_DIR/Contents/Info.plist"
+swiftc -module-cache-path "$MODULE_CACHE" -parse-as-library -O -framework SwiftUI -framework AppKit \
   "$SOURCE_DIR"/*.swift \
+  "$ROOT_DIR/native/dock-switch-app/Sources/DockSwitchCore/AppIdentity.swift" \
   "$ROOT_DIR/native/dock-switch-app/Sources/DockSwitchCore/CustomPhraseShortcut.swift" \
-  -o "$MACOS_DIR/DockSwitchSettings"
-
-cat > "$CONTENTS_DIR/Info.plist" <<'PLIST'
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>CFBundleDevelopmentRegion</key>
-    <string>en</string>
-    <key>CFBundleExecutable</key>
-    <string>DockSwitchSettings</string>
-    <key>CFBundleIdentifier</key>
-    <string>me.longbiaochen.dock-switch.settings</string>
-    <key>CFBundleInfoDictionaryVersion</key>
-    <string>6.0</string>
-    <key>CFBundleName</key>
-    <string>Dock Switch Settings</string>
-    <key>CFBundleIconFile</key>
-    <string>settings</string>
-    <key>CFBundlePackageType</key>
-    <string>APPL</string>
-    <key>CFBundleSupportedPlatforms</key>
-    <array>
-        <string>MacOSX</string>
-    </array>
-    <key>CFBundleShortVersionString</key>
-    <string>1.1.1</string>
-    <key>CFBundleVersion</key>
-    <string>1</string>
-    <key>DTCompiler</key>
-    <string>com.apple.compilers.llvm.clang.1_0</string>
-    <key>DTPlatformBuild</key>
-    <string>25F5057f</string>
-    <key>DTPlatformName</key>
-    <string>macosx</string>
-    <key>DTPlatformVersion</key>
-    <string>26.5</string>
-    <key>DTSDKBuild</key>
-    <string>25F5057f</string>
-    <key>DTSDKName</key>
-    <string>macosx26.5</string>
-    <key>DTXcode</key>
-    <string>2620</string>
-    <key>DTXcodeBuild</key>
-    <string>17A400</string>
-    <key>LSMinimumSystemVersion</key>
-    <string>14.0</string>
-    <key>NSHighResolutionCapable</key>
-    <true/>
-</dict>
-</plist>
-PLIST
-
-printf 'APPL????' > "$CONTENTS_DIR/PkgInfo"
-
-if [[ -z "$IDENTITY" ]] || ! security find-identity -v -p codesigning | grep -q "$IDENTITY"; then
-  echo "error: required code signing identity not found: $IDENTITY" >&2
-  echo "Set CSC_NAME to an installed signing identity, or install the default identity." >&2
-  exit 1
-fi
-
-# File Provider-backed workspaces can attach metadata to newly-created bundle
-# contents. Strip it immediately before signing so it cannot be reintroduced
-# while the signing identity is being resolved.
-/usr/bin/xattr -cr "$APP_DIR"
-/usr/bin/codesign --force --options runtime --timestamp --sign "$IDENTITY" "$APP_DIR"
-
+  -o "$APP_DIR/Contents/MacOS/DockSwitchSettings"
+printf 'APPL????' > "$APP_DIR/Contents/PkgInfo"
+python3 "$ROOT_DIR/scripts/build-identity.py" sign-settings --directory "$IDENTITY_DIR" --app "$APP_DIR"
 echo "$APP_DIR"

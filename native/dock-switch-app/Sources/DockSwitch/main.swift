@@ -147,8 +147,7 @@ final class DockSwitchApp: NSObject, NSApplicationDelegate {
                 return self.runOnMain {
                     self.codexDisplaySelectionService.select(target: target, appName: appName, source: source)
                 }
-            },
-            configStore: configStore
+            }
         )
         controlServer?.start()
     }

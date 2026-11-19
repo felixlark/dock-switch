@@ -52,27 +52,6 @@ test("default config places the X web app on the left display", () => {
     });
 });
 
-test("default config cycles ChatGPT Web and X with F3 on the left display", () => {
-    const cycle = config.app_cycles.find(entry => entry.key === "F3");
-
-    assert.deepEqual(cycle && cycle.apps.map(app => ({
-        name: app.name,
-        placement: app.placement,
-        openPath: app.open_path
-    })), [
-        {
-            name: "ChatGPT Web",
-            placement: "side_left_fill",
-            openPath: "~/Applications/Chrome Apps.localized/ChatGPT.app"
-        },
-        {
-            name: "X",
-            placement: "side_left_fill",
-            openPath: "~/Applications/Chrome Apps.localized/X.app"
-        }
-    ]);
-});
-
 test("default config maps Terminal to right screen fill", () => {
     const terminal = config.dock_items.find(entry => entry.name === "Terminal");
     const x = config.dock_items.find(entry => entry.name === "X");

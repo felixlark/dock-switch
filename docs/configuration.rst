@@ -11,8 +11,7 @@ The app reads mapping data from:
 Structure
 ---------
 
-The top-level keys are ``dock_items`` and optional ``app_cycles``.
-Each ``dock_items`` entry contains:
+The top-level key is ``dock_items``. Each entry contains:
 
 - ``name``: app name expected from Dock metadata
 - ``key``: keyboard key used to trigger app focus/launch
@@ -23,31 +22,16 @@ Each ``dock_items`` entry contains:
 - ``open_path`` (optional): exact app bundle path to open instead of resolving by app name
 - ``app_url`` (optional): exact Chrome ``--app=...`` URL used to identify a web app window by pid after launch
 
-App Cycles
-----------
-
-``app_cycles`` maps one shortcut key to an ordered list of at least two apps.
-A cycle works as follows:
-
-- When the frontmost app is a cycle member, choose the next member.
-- Otherwise choose the member after the last app opened by that cycle.
-- On a fresh app launch with neither condition available, choose the first member.
-
-Each cycle app contains ``name``, optional ``kind``, ``placement``, ``open_path``,
-and ``app_url`` fields with the same launch semantics as ``dock_items``. The
-default ``F3`` cycle rotates ``ChatGPT Web`` and ``X`` and places each activation
-with ``side_left_fill``.
-
 Notes
 -----
 
 - App names are matched exactly against Dock item names.
 - Key matching in the renderer is case-insensitive, with symbolic support for launcher keys such as ``left_shift``, ``right_shift``, left ``Command``, right ``Command``, and ``Space``.
-- In the current default config, Safari, Feishu, WeChat, Google Chrome, Calendar, Notes, Contacts, Mail, Sublime Text, GitHub, and Xiaohongshu are mapped to ``internal_fill`` on the internal display. ``X`` and the ``ChatGPT Web`` cycle entry use ``side_left_fill``.
-- In the current launcher behavior, ``F20`` opens the launcher, then ``left_shift`` opens ``Codex`` with ``external_fill``, ``right_shift`` opens ``Claude`` with ``external_fill``, left ``Command`` opens ``System Settings`` with ``internal_fill``, ``\`` opens ``Terminal`` with ``side_right_fill``, and right ``Command`` has no app-launch assignment. The global Karabiner ``F3`` binding runs the configured app cycle; ``F6`` opens the SmartShadow main window with ``internal_fill``.
+- In the current default config, Safari, Feishu, WeChat, Google Chrome, Calendar, Notes, Contacts, Mail, Sublime Text, GitHub, and Xiaohongshu are mapped to ``internal_fill`` on the internal display. ``X`` uses ``side_left_fill``.
+- In the current launcher behavior, ``F20`` opens the launcher, then ``left_shift`` opens ``Codex`` with ``external_fill``, ``right_shift`` opens ``Claude`` with ``external_fill``, left ``Command`` opens ``System Settings`` with ``internal_fill``, ``\`` opens ``Terminal`` with ``side_right_fill``, and right ``Command`` has no app-launch assignment. The global Karabiner ``F3`` binding opens the ChatGPT Chrome Web app with ``side_left_fill``; ``F6`` opens the SmartShadow main window with ``internal_fill``.
 - A tap of right ``Command`` opens the HUD through ``F20``; right ``Command`` combinations retain their normal modifier behavior. The ``Caps Lock`` (中/英) key is passed through for macOS input-source switching. The configuration script removes old global and per-device Caps Lock/right Command mappings. Enable the Caps Lock input-source switch in macOS Keyboard settings.
-- Karabiner single-key shortcuts for ``F3`` and ``F6`` should be generated with ``yarn karabiner:f20``. The rule runs the ``F3`` app cycle and opens the SmartShadow main window with ``internal_fill`` through ``F6``, while removing legacy ``left_shift`` and ``right_shift`` launcher mappings so Shift returns to the default system behavior.
-- ``Codex``, ``ChatGPT``, ``SmartShadow``, ``Claude``, and Command shortcuts render in the launcher HUD as default Dock labels: ``L⇧`` for left Shift / Codex, ``F6`` for ChatGPT, ``F3`` for SmartShadow, ``R⇧`` for right Shift / Claude, and ``⌘`` for left/right ``Command``. The app defaults are configurable in Dock Switch Settings while remaining excluded from ordinary fallback numbering. The global Karabiner bindings are consumed before the HUD: F3 runs the app cycle, F6 opens the SmartShadow main window with ``internal_fill``, and neither selects the HUD's corresponding default entry.
+- Karabiner single-key shortcuts for ``F3`` and ``F6`` should be generated with ``yarn karabiner:f20``. The rule opens the ChatGPT Chrome Web app with ``side_left_fill`` for ``F3`` and the SmartShadow main window with ``internal_fill`` for ``F6``, while removing legacy ``left_shift`` and ``right_shift`` launcher mappings so Shift returns to the default system behavior.
+- ``Codex``, ``ChatGPT``, ``SmartShadow``, ``Claude``, and Command shortcuts render in the launcher HUD as default Dock labels: ``L⇧`` for left Shift / Codex, ``F6`` for ChatGPT, ``F3`` for SmartShadow, ``R⇧`` for right Shift / Claude, and ``⌘`` for left/right ``Command``. The app defaults are configurable in Dock Switch Settings while remaining excluded from ordinary fallback numbering. The global Karabiner bindings are consumed before the HUD: F3 opens the ChatGPT Chrome Web app, F6 opens the SmartShadow main window with ``internal_fill``, and neither selects the HUD's corresponding default entry.
 - Dock Switch Settings records shortcuts by keypress: click an app's shortcut cell, then press the key. Pressing and releasing left or right ``Shift`` (or ``Command``) on its own records ``L⇧``/``R⇧`` (``⌘``) and saves ``LEFT_SHIFT``/``RIGHT_SHIFT`` (``COMMAND_LEFT``/``COMMAND_RIGHT``). ``Delete`` clears the shortcut and ``Esc`` cancels. Keys the launcher uses itself (``F20``, arrows, ``[``/``]``, ``Return``) are rejected.
 - A saved launcher key takes precedence over the built-in default app for that key, so assigning ``R⇧`` to ChatGPT opens ChatGPT instead of Claude.
 - ``ArrowLeft`` moves the frontmost window to the left side-display work area.

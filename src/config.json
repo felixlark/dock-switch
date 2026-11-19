@@ -123,26 +123,5 @@
             "screen": "1",
             "placement": "internal_fill"
         }
-    ],
-    "app_cycles": [
-        {
-            "key": "F3",
-            "apps": [
-                {
-                    "name": "ChatGPT Web",
-                    "kind": "web_app",
-                    "placement": "side_left_fill",
-                    "open_path": "~/Applications/Chrome Apps.localized/ChatGPT.app",
-                    "app_url": "https://chatgpt.com/"
-                },
-                {
-                    "name": "X",
-                    "kind": "web_app",
-                    "placement": "side_left_fill",
-                    "open_path": "~/Applications/Chrome Apps.localized/X.app",
-                    "app_url": "https://x.com/?utm_source=homescreen&utm_medium=shortcut"
-                }
-            ]
-        }
     ]
 }

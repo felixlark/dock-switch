@@ -4,7 +4,7 @@ const assert = require("node:assert/strict");
 const {
     DOCK_SWITCH_RULE_DESCRIPTION,
     CODEX_OPEN_COMMAND,
-    F3_CYCLE_COMMAND,
+    F3_CHATGPT_WEB_COMMAND,
     LOGITECH_TOP_ROW_CONSUMER_DEVICE,
     SMARTSHADOW_MAIN_COMMAND,
     applyDockSwitchKarabinerConfig,
@@ -128,7 +128,7 @@ test("applyDockSwitchKarabinerProfile keeps F3 and F6 direct while removing Shif
     );
     assert.deepEqual(profile.simple_modifications, []);
     assert.deepEqual(profile.fn_function_keys, [
-        { from: { key_code: "f3" }, to: [{ shell_command: F3_CYCLE_COMMAND }] },
+        { from: { key_code: "f3" }, to: [{ shell_command: F3_CHATGPT_WEB_COMMAND }] },
         { from: { key_code: "f5" }, to: [{ key_code: "f5" }] },
         { from: { key_code: "f6" }, to: [{ shell_command: SMARTSHADOW_MAIN_COMMAND }] }
     ]);
@@ -139,7 +139,7 @@ test("applyDockSwitchKarabinerProfile keeps F3 and F6 direct while removing Shif
     assert.equal(dockSwitchRule.manipulators.length, 6);
 
     const f3 = dockSwitchRule.manipulators.find(manipulator => manipulator.from.key_code === "f3");
-    assert.deepEqual(f3.to, [{ shell_command: F3_CYCLE_COMMAND }]);
+    assert.deepEqual(f3.to, [{ shell_command: F3_CHATGPT_WEB_COMMAND }]);
 
     const unsupportedMissionControl = dockSwitchRule.manipulators.find(manipulator =>
         manipulator.from.consumer_key_code === "mission_control"
@@ -151,7 +151,7 @@ test("applyDockSwitchKarabinerProfile keeps F3 and F6 direct while removing Shif
     );
     assert.equal(missionControl.length, 1);
     assert.deepEqual(missionControl.map(manipulator => manipulator.to), [
-        [{ shell_command: F3_CYCLE_COMMAND }]
+        [{ shell_command: F3_CHATGPT_WEB_COMMAND }]
     ]);
 
     const f6 = dockSwitchRule.manipulators.find(manipulator => manipulator.from.key_code === "f6");
@@ -177,7 +177,7 @@ test("applyDockSwitchKarabinerProfile treats Karabiner-reordered manipulators as
     const profile = {
         devices: [LOGITECH_TOP_ROW_CONSUMER_DEVICE],
         fn_function_keys: [
-            { from: { key_code: "f3" }, to: [{ shell_command: F3_CYCLE_COMMAND }] },
+            { from: { key_code: "f3" }, to: [{ shell_command: F3_CHATGPT_WEB_COMMAND }] },
         { from: { key_code: "f6" }, to: [{ shell_command: SMARTSHADOW_MAIN_COMMAND }] }
         ],
         complex_modifications: {
@@ -216,7 +216,7 @@ test("applyDockSwitchKarabinerProfile installs top-row F3 and F6 shortcuts", () 
     assert.equal(result.changed, true);
     assert.deepEqual(profile.fn_function_keys, [
         { from: { key_code: "f1" }, to: [{ apple_vendor_keyboard_key_code: "brightness_down" }] },
-        { from: { key_code: "f3" }, to: [{ shell_command: F3_CYCLE_COMMAND }] },
+        { from: { key_code: "f3" }, to: [{ shell_command: F3_CHATGPT_WEB_COMMAND }] },
         { from: { key_code: "f6" }, to: [{ shell_command: SMARTSHADOW_MAIN_COMMAND }] },
         { from: { key_code: "f7" }, to: [{ key_code: "vk_consumer_previous" }] }
     ]);
@@ -317,4 +317,16 @@ test("F6 opens the SmartShadow main window with internal fill", () => {
         /place --app SmartShadow --placement internal_fill/
     );
     assert.equal(SMARTSHADOW_MAIN_COMMAND.includes("--open-codex"), false);
+});
+
+test("F3 opens the ChatGPT Chrome Web app with left fill and no cycle command", () => {
+    assert.match(
+        F3_CHATGPT_WEB_COMMAND,
+        /Chrome Apps\.localized\/ChatGPT\.app/
+    );
+    assert.match(
+        F3_CHATGPT_WEB_COMMAND,
+        /place --pid "\$PID" --placement side_left_fill/
+    );
+    assert.equal(F3_CHATGPT_WEB_COMMAND.includes(" cycle "), false);
 });

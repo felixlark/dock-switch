@@ -29,7 +29,6 @@ test("default config maps requested apps and web apps to internal fill", () => {
         "Notes",
         "Contacts",
         "Sublime Text",
-        "X",
         "GitHub",
         "小红书"
     ];
@@ -39,6 +38,39 @@ test("default config maps requested apps and web apps to internal fill", () => {
         assert.equal(item && item.screen, "1", `${name} should target the internal screen`);
         assert.equal(item && item.placement, "internal_fill", `${name} should be maximized on the internal screen`);
     }
+});
+
+test("default config places the X web app on the left display", () => {
+    assert.deepEqual(config.dock_items.find(entry => entry.name === "X"), {
+        name: "X",
+        key: "X",
+        screen: "side_left",
+        kind: "web_app",
+        placement: "side_left_fill",
+        open_path: "~/Applications/Chromium Apps.localized/X.app",
+        app_url: "https://x.com/?utm_source=homescreen&utm_medium=shortcut"
+    });
+});
+
+test("default config cycles ChatGPT Web and X with F3 on the left display", () => {
+    const cycle = config.app_cycles.find(entry => entry.key === "F3");
+
+    assert.deepEqual(cycle && cycle.apps.map(app => ({
+        name: app.name,
+        placement: app.placement,
+        openPath: app.open_path
+    })), [
+        {
+            name: "ChatGPT Web",
+            placement: "side_left_fill",
+            openPath: "~/Applications/Chrome Apps.localized/ChatGPT.app"
+        },
+        {
+            name: "X",
+            placement: "side_left_fill",
+            openPath: "~/Applications/Chrome Apps.localized/X.app"
+        }
+    ]);
 });
 
 test("default config maps Terminal to right screen fill", () => {

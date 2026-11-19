@@ -22,6 +22,7 @@ function usage() {
     console.error("  dock-switch-cli codex-display --target <side_left|external|side_right|internal>");
     console.error("  dock-switch-cli computer-use-browser [--anchor-app <AppName>] [--browser-app <AppName>]");
     console.error("  dock-switch-cli gokit5-status");
+    console.error("  dock-switch-cli cycle --key <Key>");
     console.error("  dock-switch-cli place (--app <AppName> | --pid <Pid>) --placement <Placement>");
     console.error("  dock-switch-cli move (--app <AppName> | --pid <Pid>) --x <X> --y <Y> --w <W> --h <H>");
     console.error("  dock-switch-cli get-chrome-window --profile-dir <Dir>");
@@ -40,6 +41,7 @@ function parseArgs(argv) {
     let displayTarget = "";
     let anchorApp = "";
     let browserApp = "";
+    let cycleKey = "";
     let outputPath = "";
     let x = null;
     let y = null;
@@ -99,6 +101,9 @@ function parseArgs(argv) {
         } else if (arg === "--h") {
             h = Number(argv[i + 1]);
             i += 1;
+        } else if (arg === "--key") {
+            cycleKey = argv[i + 1] || "";
+            i += 1;
         } else {
             usage();
         }
@@ -137,6 +142,15 @@ function parseArgs(argv) {
             command: "computer-use-browser",
             anchorApp: anchorApp || "Codex",
             browserApp: browserApp || "Google Chrome for Testing",
+            format: "json"
+        };
+    }
+
+    if (command === "cycle") {
+        if (!cycleKey) usage();
+        return {
+            command: "cycle-apps",
+            key: cycleKey,
             format: "json"
         };
     }

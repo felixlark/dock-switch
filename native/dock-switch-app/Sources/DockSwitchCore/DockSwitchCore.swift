@@ -82,9 +82,22 @@ public struct DockItemSnapshot: Codable, Equatable {
 
 public struct LauncherConfig: Codable, Equatable {
     public var dockItems: [LauncherConfigItem]
+    public var appCycles: [LauncherAppCycle]
 
     enum CodingKeys: String, CodingKey {
         case dockItems = "dock_items"
+        case appCycles = "app_cycles"
+    }
+
+    public init(dockItems: [LauncherConfigItem], appCycles: [LauncherAppCycle] = []) {
+        self.dockItems = dockItems
+        self.appCycles = appCycles
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        dockItems = try container.decodeIfPresent([LauncherConfigItem].self, forKey: .dockItems) ?? []
+        appCycles = try container.decodeIfPresent([LauncherAppCycle].self, forKey: .appCycles) ?? []
     }
 
     public static let empty = LauncherConfig(dockItems: [])
@@ -107,6 +120,40 @@ public struct LauncherConfigItem: Codable, Equatable {
         case placement
         case openPath = "open_path"
         case appURL = "app_url"
+    }
+}
+
+public struct LauncherAppCycle: Codable, Equatable {
+    public var key: String
+    public var apps: [LauncherAppCycleItem]
+
+    public init(key: String, apps: [LauncherAppCycleItem]) {
+        self.key = key
+        self.apps = apps
+    }
+}
+
+public struct LauncherAppCycleItem: Codable, Equatable {
+    public var name: String
+    public var kind: String?
+    public var placement: String?
+    public var openPath: String?
+    public var appURL: String?
+
+    enum CodingKeys: String, CodingKey {
+        case name
+        case kind
+        case placement
+        case openPath = "open_path"
+        case appURL = "app_url"
+    }
+
+    public init(name: String, kind: String? = nil, placement: String? = nil, openPath: String? = nil, appURL: String? = nil) {
+        self.name = name
+        self.kind = kind
+        self.placement = placement
+        self.openPath = openPath
+        self.appURL = appURL
     }
 }
 
@@ -1084,6 +1131,126 @@ public final class LauncherService {
         }
         showMouseFeedback(point)
         return true
+    }
+}
+
+public enum LauncherAppCycleRules {
+    public static func cycle(for key: String, in config: LauncherConfig) -> LauncherAppCycle? {
+        let normalized = LauncherRules.normalizeKey(key)
+        guard !normalized.isEmpty else { return nil }
+        return config.appCycles.first {
+            LauncherRules.normalizeKey($0.key) == normalized && $0.apps.count >= 2
+        }
+    }
+
+    public static func targetIndex(
+        apps: [LauncherAppCycleItem],
+        frontmostBundlePath: String?,
+        lastIndex: Int?,
+        resolveOpenPath: (String) -> String = WebAppRuntime.resolveOpenPath
+    ) -> Int? {
+        guard !apps.isEmpty else { return nil }
+        if let frontmostIndex = index(
+            matching: frontmostBundlePath,
+            apps: apps,
+            resolveOpenPath: resolveOpenPath
+        ) {
+            return (frontmostIndex + 1) % apps.count
+        }
+        if let lastIndex, apps.indices.contains(lastIndex) {
+            return (lastIndex + 1) % apps.count
+        }
+        return 0
+    }
+
+    public static func index(
+        matching bundlePath: String?,
+        apps: [LauncherAppCycleItem],
+        resolveOpenPath: (String) -> String = WebAppRuntime.resolveOpenPath
+    ) -> Int? {
+        guard let bundlePath, !bundlePath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return nil
+        }
+        let targetPath = canonicalPath(bundlePath)
+        return apps.firstIndex { app in
+            guard let openPath = app.openPath,
+                  !openPath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                return false
+            }
+            return canonicalPath(resolveOpenPath(openPath)) == targetPath
+        }
+    }
+
+    private static func canonicalPath(_ path: String) -> String {
+        URL(fileURLWithPath: path).standardizedFileURL.resolvingSymlinksInPath().path
+    }
+}
+
+public struct LauncherAppCycleResult: Equatable {
+    public var ok: Bool
+    public var appName: String?
+    public var index: Int?
+    public var error: String?
+
+    public init(ok: Bool, appName: String? = nil, index: Int? = nil, error: String? = nil) {
+        self.ok = ok
+        self.appName = appName
+        self.index = index
+        self.error = error
+    }
+}
+
+public final class LauncherAppCycleService {
+    private let configStore: ConfigStore
+    private let launcherService: LauncherService
+    private let frontmostBundlePath: () -> String?
+    private let lock = NSLock()
+    private var lastIndexByKey: [String: Int] = [:]
+
+    public init(
+        configStore: ConfigStore = ConfigStore(),
+        launcherService: LauncherService,
+        frontmostBundlePath: @escaping () -> String? = {
+            NSWorkspace.shared.frontmostApplication?.bundleURL?.standardizedFileURL.path
+        }
+    ) {
+        self.configStore = configStore
+        self.launcherService = launcherService
+        self.frontmostBundlePath = frontmostBundlePath
+    }
+
+    public func cycle(key: String) -> LauncherAppCycleResult {
+        lock.lock()
+        defer { lock.unlock() }
+
+        let normalizedKey = LauncherRules.normalizeKey(key)
+        let config = configStore.load()
+        guard let cycle = LauncherAppCycleRules.cycle(for: normalizedKey, in: config) else {
+            return LauncherAppCycleResult(ok: false, error: "No app cycle configured for \(normalizedKey)")
+        }
+        guard let index = LauncherAppCycleRules.targetIndex(
+            apps: cycle.apps,
+            frontmostBundlePath: frontmostBundlePath(),
+            lastIndex: lastIndexByKey[normalizedKey]
+        ) else {
+            return LauncherAppCycleResult(ok: false, error: "No apps configured for \(normalizedKey)")
+        }
+
+        let app = cycle.apps[index]
+        let item = LauncherItem(
+            name: app.name,
+            key: "",
+            kind: app.kind,
+            placement: app.placement,
+            openPath: app.openPath,
+            appURL: app.appURL,
+            dockItem: DockItemSnapshot(name: app.name, pos: .zero, size: .zero)
+        )
+        guard launcherService.activate(item) else {
+            return LauncherAppCycleResult(ok: false, error: "Application not found: \(app.name)")
+        }
+        lastIndexByKey[normalizedKey] = index
+        return LauncherAppCycleResult(ok: true, appName: app.name, index: index)
     }
 }
 
@@ -2120,6 +2287,7 @@ public final class ControlServer {
     private let getGokit5Status: () -> [String: Any]
     private let selectCodexDisplay: ([String: Any]) -> [String: Any]
     private let launcherService: LauncherService
+    private let appCycleService: LauncherAppCycleService
 
     public init(
         displayService: DisplayService,
@@ -2128,7 +2296,8 @@ public final class ControlServer {
         hideLauncher: @escaping () -> Bool,
         showMouseFeedback: @escaping (CGPoint) -> Void = { _ in },
         getGokit5Status: @escaping () -> [String: Any] = { ["enabled": false, "status": "unavailable", "running": false] },
-        selectCodexDisplay: @escaping ([String: Any]) -> [String: Any] = { _ in ["ok": false, "error": "select-codex-display is unavailable"] }
+        selectCodexDisplay: @escaping ([String: Any]) -> [String: Any] = { _ in ["ok": false, "error": "select-codex-display is unavailable"] },
+        configStore: ConfigStore = ConfigStore()
     ) {
         self.displayService = displayService
         self.windowPlacement = windowPlacement
@@ -2138,6 +2307,10 @@ public final class ControlServer {
         self.getGokit5Status = getGokit5Status
         self.selectCodexDisplay = selectCodexDisplay
         self.launcherService = LauncherService(windowPlacement: windowPlacement, showMouseFeedback: showMouseFeedback)
+        self.appCycleService = LauncherAppCycleService(
+            configStore: configStore,
+            launcherService: launcherService
+        )
     }
 
     deinit {
@@ -2227,6 +2400,16 @@ public final class ControlServer {
             return ["ok": true, "gokit5": getGokit5Status()]
         case "select-codex-display":
             return selectCodexDisplay(command)
+        case "cycle-apps":
+            guard let key = command["key"] as? String, !key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                return ["ok": false, "error": "key is required"]
+            }
+            let result = appCycleService.cycle(key: key)
+            var response: [String: Any] = ["ok": result.ok]
+            if let appName = result.appName { response["app"] = appName }
+            if let index = result.index { response["index"] = index }
+            if let error = result.error { response["error"] = error }
+            return response
         case "place-app":
             guard let appName = command["appName"] as? String,
                   let placement = command["placement"] as? String else {

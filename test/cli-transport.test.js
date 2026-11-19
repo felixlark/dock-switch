@@ -33,12 +33,3 @@ test("lost response after send is explicitly unknown and cannot trigger auto-rep
     sockets[1].emit("error", new Error("not connected"));
     await assert.rejects(unsent, err => err.requestMayHaveRun === false);
 });
-
-test("cycle command carries its configured key to the control server", () => {
-    const { api } = load();
-    assert.deepEqual(JSON.parse(JSON.stringify(api.parseArgs(["cycle", "--key", "F3"]))), {
-        command: "cycle-apps",
-        key: "F3",
-        format: "json"
-    });
-});

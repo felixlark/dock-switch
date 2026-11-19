@@ -2,7 +2,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 
-const DOCK_SWITCH_RULE_DESCRIPTION = "dock-switch shortcuts with F3 app cycle and F6 SmartShadow main";
+const DOCK_SWITCH_RULE_DESCRIPTION = "dock-switch shortcuts with F3 ChatGPT Web and F6 SmartShadow main";
 const MANAGED_FN_FUNCTION_KEYS = ["f3", "f6"];
 const LOGITECH_TOP_ROW_CONSUMER_DEVICE = {
     identifiers: {
@@ -17,13 +17,17 @@ function shellCommand(parts) {
     return parts.map(part => `'${part.replace(/'/g, "'\\''")}'`).join(" ");
 }
 
-const F3_CYCLE_COMMAND = shellCommand([
+const F3_CHATGPT_WEB_COMMAND = shellCommand([
     "/bin/zsh",
     "-lc",
     [
+        "APP=\"$HOME/Applications/Chrome Apps.localized/ChatGPT.app\"",
         "NODE=/opt/homebrew/bin/node",
         "CLI=/Applications/dock-switch.app/Contents/Resources/app/bin/dock-switch-cli.js",
-        "[[ -x \"$NODE\" && -f \"$CLI\" ]] && \"$NODE\" \"$CLI\" cycle --key F3 >/dev/null 2>&1"
+        "/usr/bin/open \"$APP\" >/dev/null 2>&1",
+        "PID=\"\"",
+        "for attempt in {1..30}; do PID=$(/usr/bin/pgrep -f -x \"$APP/Contents/MacOS/app_mode_loader\" | /usr/bin/head -n 1); [[ -n \"$PID\" ]] && break; /bin/sleep 0.1; done",
+        "[[ -x \"$NODE\" && -f \"$CLI\" && -n \"$PID\" ]] && \"$NODE\" \"$CLI\" place --pid \"$PID\" --placement side_left_fill >/dev/null 2>&1 &"
     ].join("; ")
 ]);
 // SmartShadow routes the request to the signed interaction helper.
@@ -70,7 +74,7 @@ function buildDockSwitchKarabinerRule() {
             {
                 type: "basic",
                 from: fromKeyCode("f3"),
-                to: [{ shell_command: F3_CYCLE_COMMAND }]
+                to: [{ shell_command: F3_CHATGPT_WEB_COMMAND }]
             },
             {
                 type: "basic",
@@ -78,7 +82,7 @@ function buildDockSwitchKarabinerRule() {
                     apple_vendor_keyboard_key_code: "mission_control",
                     modifiers: { optional: ["any"] }
                 },
-                to: [{ shell_command: F3_CYCLE_COMMAND }]
+                to: [{ shell_command: F3_CHATGPT_WEB_COMMAND }]
             },
             {
                 type: "basic",
@@ -152,7 +156,7 @@ function managedFunctionKeyEntry(keyCode) {
     if (keyCode === "f3") {
         return {
             from: { key_code: keyCode },
-            to: [{ shell_command: F3_CYCLE_COMMAND }]
+            to: [{ shell_command: F3_CHATGPT_WEB_COMMAND }]
         };
     }
     if (keyCode === "f6") {
@@ -291,7 +295,7 @@ function writeKarabinerConfig(config, configPath = defaultKarabinerConfigPath())
 module.exports = {
     DOCK_SWITCH_RULE_DESCRIPTION,
     CODEX_OPEN_COMMAND,
-    F3_CYCLE_COMMAND,
+    F3_CHATGPT_WEB_COMMAND,
     LOGITECH_TOP_ROW_CONSUMER_DEVICE,
     SMARTSHADOW_MAIN_COMMAND,
     applyDockSwitchKarabinerConfig,

@@ -4,8 +4,8 @@ const assert = require("node:assert/strict");
 const {
     DOCK_SWITCH_RULE_DESCRIPTION,
     CODEX_OPEN_COMMAND,
+    F3_CYCLE_COMMAND,
     LOGITECH_TOP_ROW_CONSUMER_DEVICE,
-    SMARTSHADOW_DIRECT_COMMAND,
     applyDockSwitchKarabinerConfig,
     applyDockSwitchKarabinerProfile,
     buildDockSwitchKarabinerRule
@@ -127,7 +127,7 @@ test("applyDockSwitchKarabinerProfile keeps F3 and F6 direct while removing Shif
     );
     assert.deepEqual(profile.simple_modifications, []);
     assert.deepEqual(profile.fn_function_keys, [
-        { from: { key_code: "f3" }, to: [{ shell_command: SMARTSHADOW_DIRECT_COMMAND }] },
+        { from: { key_code: "f3" }, to: [{ shell_command: F3_CYCLE_COMMAND }] },
         { from: { key_code: "f5" }, to: [{ key_code: "f5" }] },
         { from: { key_code: "f6" }, to: [{ shell_command: CODEX_OPEN_COMMAND }] }
     ]);
@@ -138,7 +138,7 @@ test("applyDockSwitchKarabinerProfile keeps F3 and F6 direct while removing Shif
     assert.equal(dockSwitchRule.manipulators.length, 6);
 
     const f3 = dockSwitchRule.manipulators.find(manipulator => manipulator.from.key_code === "f3");
-    assert.deepEqual(f3.to, [{ shell_command: SMARTSHADOW_DIRECT_COMMAND }]);
+    assert.deepEqual(f3.to, [{ shell_command: F3_CYCLE_COMMAND }]);
 
     const unsupportedMissionControl = dockSwitchRule.manipulators.find(manipulator =>
         manipulator.from.consumer_key_code === "mission_control"
@@ -150,7 +150,7 @@ test("applyDockSwitchKarabinerProfile keeps F3 and F6 direct while removing Shif
     );
     assert.equal(missionControl.length, 1);
     assert.deepEqual(missionControl.map(manipulator => manipulator.to), [
-        [{ shell_command: SMARTSHADOW_DIRECT_COMMAND }]
+        [{ shell_command: F3_CYCLE_COMMAND }]
     ]);
 
     const f6 = dockSwitchRule.manipulators.find(manipulator => manipulator.from.key_code === "f6");
@@ -176,7 +176,7 @@ test("applyDockSwitchKarabinerProfile treats Karabiner-reordered manipulators as
     const profile = {
         devices: [LOGITECH_TOP_ROW_CONSUMER_DEVICE],
         fn_function_keys: [
-            { from: { key_code: "f3" }, to: [{ shell_command: SMARTSHADOW_DIRECT_COMMAND }] },
+            { from: { key_code: "f3" }, to: [{ shell_command: F3_CYCLE_COMMAND }] },
             { from: { key_code: "f6" }, to: [{ shell_command: CODEX_OPEN_COMMAND }] }
         ],
         complex_modifications: {
@@ -215,7 +215,7 @@ test("applyDockSwitchKarabinerProfile installs top-row F3 and F6 as direct funct
     assert.equal(result.changed, true);
     assert.deepEqual(profile.fn_function_keys, [
         { from: { key_code: "f1" }, to: [{ apple_vendor_keyboard_key_code: "brightness_down" }] },
-        { from: { key_code: "f3" }, to: [{ shell_command: SMARTSHADOW_DIRECT_COMMAND }] },
+        { from: { key_code: "f3" }, to: [{ shell_command: F3_CYCLE_COMMAND }] },
         { from: { key_code: "f6" }, to: [{ shell_command: CODEX_OPEN_COMMAND }] },
         { from: { key_code: "f7" }, to: [{ key_code: "vk_consumer_previous" }] }
     ]);

@@ -2,7 +2,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 
-const DOCK_SWITCH_RULE_DESCRIPTION = "dock-switch launcher shortcuts with direct F3/F6 apps";
+const DOCK_SWITCH_RULE_DESCRIPTION = "dock-switch launcher shortcuts with F3 app cycle and F6 Codex";
 const MANAGED_FN_FUNCTION_KEYS = ["f3", "f6"];
 const LOGITECH_TOP_ROW_CONSUMER_DEVICE = {
     identifiers: {
@@ -17,15 +17,13 @@ function shellCommand(parts) {
     return parts.map(part => `'${part.replace(/'/g, "'\\''")}'`).join(" ");
 }
 
-const SMARTSHADOW_DIRECT_COMMAND = shellCommand([
+const F3_CYCLE_COMMAND = shellCommand([
     "/bin/zsh",
     "-lc",
     [
-        "APP=/Applications/SmartShadow.app",
         "NODE=/opt/homebrew/bin/node",
         "CLI=/Applications/dock-switch.app/Contents/Resources/app/bin/dock-switch-cli.js",
-        "/usr/bin/open \"$APP\" >/dev/null 2>&1",
-        "[[ -x \"$NODE\" && -f \"$CLI\" ]] && \"$NODE\" \"$CLI\" place --app SmartShadow --placement side_left_fill >/dev/null 2>&1 &"
+        "[[ -x \"$NODE\" && -f \"$CLI\" ]] && \"$NODE\" \"$CLI\" cycle --key F3 >/dev/null 2>&1"
     ].join("; ")
 ]);
 // SmartShadow routes the request to the signed interaction helper.
@@ -63,7 +61,7 @@ function buildDockSwitchKarabinerRule() {
             {
                 type: "basic",
                 from: fromKeyCode("f3"),
-                to: [{ shell_command: SMARTSHADOW_DIRECT_COMMAND }]
+                to: [{ shell_command: F3_CYCLE_COMMAND }]
             },
             {
                 type: "basic",
@@ -71,7 +69,7 @@ function buildDockSwitchKarabinerRule() {
                     apple_vendor_keyboard_key_code: "mission_control",
                     modifiers: { optional: ["any"] }
                 },
-                to: [{ shell_command: SMARTSHADOW_DIRECT_COMMAND }]
+                to: [{ shell_command: F3_CYCLE_COMMAND }]
             },
             {
                 type: "basic",
@@ -145,7 +143,7 @@ function managedFunctionKeyEntry(keyCode) {
     if (keyCode === "f3") {
         return {
             from: { key_code: keyCode },
-            to: [{ shell_command: SMARTSHADOW_DIRECT_COMMAND }]
+            to: [{ shell_command: F3_CYCLE_COMMAND }]
         };
     }
     if (keyCode === "f6") {
@@ -284,8 +282,8 @@ function writeKarabinerConfig(config, configPath = defaultKarabinerConfigPath())
 module.exports = {
     DOCK_SWITCH_RULE_DESCRIPTION,
     CODEX_OPEN_COMMAND,
+    F3_CYCLE_COMMAND,
     LOGITECH_TOP_ROW_CONSUMER_DEVICE,
-    SMARTSHADOW_DIRECT_COMMAND,
     applyDockSwitchKarabinerConfig,
     applyDockSwitchKarabinerProfile,
     buildDockSwitchKarabinerRule,

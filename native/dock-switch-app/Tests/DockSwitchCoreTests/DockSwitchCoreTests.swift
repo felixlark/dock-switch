@@ -375,6 +375,69 @@ final class DockSwitchCoreTests: XCTestCase {
         XCTAssertEqual(LauncherRules.normalizeEventKey(characters: "", keyCode: UInt16(kVK_RightShift)), "RIGHT_SHIFT")
     }
 
+    func testLauncherConfigDecodesAppCyclesAndKeepsLegacyConfigsValid() throws {
+        let legacy = try JSONDecoder().decode(
+            LauncherConfig.self,
+            from: Data(#"{"dock_items":[]}"#.utf8)
+        )
+        XCTAssertEqual(legacy.appCycles, [])
+
+        let config = try JSONDecoder().decode(
+            LauncherConfig.self,
+            from: Data(#"""
+            {
+              "dock_items": [],
+              "app_cycles": [
+                {
+                  "key": "F3",
+                  "apps": [
+                    {"name":"ChatGPT Web","kind":"web_app","placement":"side_left_fill","open_path":"/Applications/ChatGPT.app","app_url":"https://chatgpt.com/"},
+                    {"name":"X","kind":"web_app","placement":"side_left_fill","open_path":"/Applications/X.app","app_url":"https://x.com/"}
+                  ]
+                }
+              ]
+            }
+            """#.utf8)
+        )
+
+        XCTAssertEqual(config.appCycles.first?.key, "F3")
+        XCTAssertEqual(config.appCycles.first?.apps.map(\.name), ["ChatGPT Web", "X"])
+        XCTAssertEqual(config.appCycles.first?.apps.map(\.placement), ["side_left_fill", "side_left_fill"])
+    }
+
+    func testAppCycleTargetsTheOtherRunningAppAndFallsBackToLastOrFirst() {
+        let apps = [
+            LauncherAppCycleItem(name: "ChatGPT Web", placement: "side_left_fill", openPath: "/Applications/ChatGPT.app"),
+            LauncherAppCycleItem(name: "X", placement: "side_left_fill", openPath: "/Applications/X.app")
+        ]
+        let resolve: (String) -> String = { $0 }
+
+        XCTAssertEqual(LauncherAppCycleRules.targetIndex(
+            apps: apps,
+            frontmostBundlePath: "/Applications/ChatGPT.app",
+            lastIndex: nil,
+            resolveOpenPath: resolve
+        ), 1)
+        XCTAssertEqual(LauncherAppCycleRules.targetIndex(
+            apps: apps,
+            frontmostBundlePath: "/Applications/X.app",
+            lastIndex: 1,
+            resolveOpenPath: resolve
+        ), 0)
+        XCTAssertEqual(LauncherAppCycleRules.targetIndex(
+            apps: apps,
+            frontmostBundlePath: "/Applications/Other.app",
+            lastIndex: 0,
+            resolveOpenPath: resolve
+        ), 1)
+        XCTAssertEqual(LauncherAppCycleRules.targetIndex(
+            apps: apps,
+            frontmostBundlePath: "/Applications/Other.app",
+            lastIndex: nil,
+            resolveOpenPath: resolve
+        ), 0)
+    }
+
     func testShortcutRulesMapReservedAppsAndWindowActions() {
         XCTAssertEqual(LauncherShortcutRules.appName(for: "F6"), "ChatGPT")
         XCTAssertEqual(LauncherShortcutRules.appName(for: "LEFT_SHIFT"), "Codex")

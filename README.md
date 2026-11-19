@@ -123,6 +123,37 @@ App shortcuts and display placement are configured in `src/config.json` under `d
 
 Use `open_path` to specify an app bundle path when the application name is ambiguous. `app_url` can identify a Chrome app window. The settings app can edit local key and placement mappings; set `DOCK_SWITCH_CONFIG_SOURCE` when a non-default configuration should be included in a build.
 
+`app_cycles` defines two or more apps that share one global shortcut. A cycle
+chooses the next app from the frontmost member, then from the last app it
+opened. The default `F3` cycle rotates `ChatGPT Web` and `X`, and both use
+`side_left_fill`:
+
+```json
+{
+  "app_cycles": [
+    {
+      "key": "F3",
+      "apps": [
+        {
+          "name": "ChatGPT Web",
+          "kind": "web_app",
+          "placement": "side_left_fill",
+          "open_path": "~/Applications/Chrome Apps.localized/ChatGPT.app",
+          "app_url": "https://chatgpt.com/"
+        },
+        {
+          "name": "X",
+          "kind": "web_app",
+          "placement": "side_left_fill",
+          "open_path": "~/Applications/Chrome Apps.localized/X.app",
+          "app_url": "https://x.com/"
+        }
+      ]
+    }
+  ]
+}
+```
+
 ## Permissions and privacy
 
 - **Accessibility:** required for Dock metadata and window inspection/placement. Grant access to dock-switch in System Settings → Privacy & Security → Accessibility.

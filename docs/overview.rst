@@ -11,7 +11,7 @@ Core Flow
 ---------
 
 1. A global shortcut (`F20`) toggles the launcher window.
-2. In the current default config, Safari, Feishu, WeChat, Google Chrome, Calendar, Notes, Contacts, Mail, Sublime Text, and configured web apps target ``internal_fill`` on the internal display, while symbolic shortcuts target ChatGPT, Codex, System Settings, Terminal, SmartShadow, and Claude.
+2. In the current default config, Safari, Feishu, WeChat, Google Chrome, Calendar, Notes, Contacts, Mail, Sublime Text, GitHub, and Xiaohongshu target ``internal_fill`` on the internal display. ``X`` and the ``ChatGPT Web`` cycle entry target ``side_left_fill``, while symbolic shortcuts target ChatGPT, Codex, System Settings, Terminal, SmartShadow, and Claude.
 3. The main process calls the native ``dock-query`` addon to fetch Dock app metadata.
 4. The renderer builds a compact key map UI.
 5. Key presses launch/focus apps; items with explicit placement or ``kind: "web_app"``
@@ -19,7 +19,7 @@ Core Flow
    ``ArrowLeft``/``ArrowRight`` move to the left/right side-display work areas,
    ``ArrowUp`` moves to the external display, ``ArrowDown`` moves to the internal
    display, ``【``/``】`` tile the current display left/right half, and launcher keys open configurable app defaults through dock-switch itself: ``left_shift`` opens ``Codex`` on the external display, ``right_shift`` opens ``Claude`` on the external display, left ``Command`` opens ``System Settings`` on the internal display, ``\`` opens
-   ``Terminal`` on the right side display, and right ``Command`` is a reserved no-op. ``F3`` and ``F6`` are local Karabiner exceptions that directly open ``SmartShadow`` and ``ChatGPT``, then use dock-switch placement with ``side_left_fill`` and ``side_right_fill``. ``Command`` shortcuts render as ``⌘`` in the HUD. ``Codex``, ``ChatGPT``, ``SmartShadow``, and ``Claude`` are configurable in Dock Switch Settings while remaining excluded from the ordinary HUD
+   ``Terminal`` on the right side display, and right ``Command`` is a reserved no-op. The local Karabiner ``F3`` binding runs the configured ``app_cycles`` entry, whose default alternates ``ChatGPT Web`` and ``X`` on the left display. ``F6`` opens Codex through SmartShadow. ``Command`` shortcuts render as ``⌘`` in the HUD. ``Codex``, ``ChatGPT``, ``SmartShadow``, and ``Claude`` are configurable in Dock Switch Settings while remaining excluded from the ordinary HUD
    fallback numbering.
 6. Display-moving arrows move the pointer to the center of the target display.
    App activation shortcuts move it to the center of the activated or placed window.

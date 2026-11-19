@@ -19,7 +19,7 @@ Core Flow
    ``ArrowLeft``/``ArrowRight`` move to the left/right side-display work areas,
    ``ArrowUp`` moves to the external display, ``ArrowDown`` moves to the internal
    display, ``【``/``】`` tile the current display left/right half, and launcher keys open configurable app defaults through dock-switch itself: ``left_shift`` opens ``Codex`` on the external display, ``right_shift`` opens ``Claude`` on the external display, left ``Command`` opens ``System Settings`` on the internal display, ``\`` opens
-   ``Terminal`` on the right side display, and right ``Command`` is a reserved no-op. The local Karabiner ``F3`` binding runs the configured ``app_cycles`` entry, whose default alternates ``ChatGPT Web`` and ``X`` on the left display. ``F6`` opens Codex through SmartShadow. ``Command`` shortcuts render as ``⌘`` in the HUD. ``Codex``, ``ChatGPT``, ``SmartShadow``, and ``Claude`` are configurable in Dock Switch Settings while remaining excluded from the ordinary HUD
+   ``Terminal`` on the right side display, and right ``Command`` is a reserved no-op. The local Karabiner ``F3`` binding runs the configured ``app_cycles`` entry, whose default alternates ``ChatGPT Web`` and ``X`` on the left display. ``F6`` opens the SmartShadow main window with ``internal_fill``. ``Command`` shortcuts render as ``⌘`` in the HUD. ``Codex``, ``ChatGPT``, ``SmartShadow``, and ``Claude`` are configurable in Dock Switch Settings while remaining excluded from the ordinary HUD
    fallback numbering.
 6. Display-moving arrows move the pointer to the center of the target display.
    App activation shortcuts move it to the center of the activated or placed window.

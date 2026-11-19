@@ -6,6 +6,7 @@ const {
     CODEX_OPEN_COMMAND,
     F3_CYCLE_COMMAND,
     LOGITECH_TOP_ROW_CONSUMER_DEVICE,
+    SMARTSHADOW_MAIN_COMMAND,
     applyDockSwitchKarabinerConfig,
     applyDockSwitchKarabinerProfile,
     buildDockSwitchKarabinerRule
@@ -129,7 +130,7 @@ test("applyDockSwitchKarabinerProfile keeps F3 and F6 direct while removing Shif
     assert.deepEqual(profile.fn_function_keys, [
         { from: { key_code: "f3" }, to: [{ shell_command: F3_CYCLE_COMMAND }] },
         { from: { key_code: "f5" }, to: [{ key_code: "f5" }] },
-        { from: { key_code: "f6" }, to: [{ shell_command: CODEX_OPEN_COMMAND }] }
+        { from: { key_code: "f6" }, to: [{ shell_command: SMARTSHADOW_MAIN_COMMAND }] }
     ]);
     assert.deepEqual(profile.devices, [LOGITECH_TOP_ROW_CONSUMER_DEVICE]);
 
@@ -154,7 +155,7 @@ test("applyDockSwitchKarabinerProfile keeps F3 and F6 direct while removing Shif
     ]);
 
     const f6 = dockSwitchRule.manipulators.find(manipulator => manipulator.from.key_code === "f6");
-    assert.deepEqual(f6.to, [{ shell_command: CODEX_OPEN_COMMAND }]);
+    assert.deepEqual(f6.to, [{ shell_command: SMARTSHADOW_MAIN_COMMAND }]);
 
     const fnF5 = dockSwitchRule.manipulators.find(manipulator =>
         manipulator.from.key_code === "f5" && manipulator.from.modifiers?.mandatory?.includes("fn")
@@ -177,7 +178,7 @@ test("applyDockSwitchKarabinerProfile treats Karabiner-reordered manipulators as
         devices: [LOGITECH_TOP_ROW_CONSUMER_DEVICE],
         fn_function_keys: [
             { from: { key_code: "f3" }, to: [{ shell_command: F3_CYCLE_COMMAND }] },
-            { from: { key_code: "f6" }, to: [{ shell_command: CODEX_OPEN_COMMAND }] }
+        { from: { key_code: "f6" }, to: [{ shell_command: SMARTSHADOW_MAIN_COMMAND }] }
         ],
         complex_modifications: {
             rules: [
@@ -199,7 +200,7 @@ test("applyDockSwitchKarabinerProfile treats Karabiner-reordered manipulators as
     assert.equal(result.changed, false);
 });
 
-test("applyDockSwitchKarabinerProfile installs top-row F3 and F6 as direct function-key launchers", () => {
+test("applyDockSwitchKarabinerProfile installs top-row F3 and F6 shortcuts", () => {
     const profile = {
         fn_function_keys: [
             { from: { key_code: "f1" }, to: [{ apple_vendor_keyboard_key_code: "brightness_down" }] },
@@ -216,7 +217,7 @@ test("applyDockSwitchKarabinerProfile installs top-row F3 and F6 as direct funct
     assert.deepEqual(profile.fn_function_keys, [
         { from: { key_code: "f1" }, to: [{ apple_vendor_keyboard_key_code: "brightness_down" }] },
         { from: { key_code: "f3" }, to: [{ shell_command: F3_CYCLE_COMMAND }] },
-        { from: { key_code: "f6" }, to: [{ shell_command: CODEX_OPEN_COMMAND }] },
+        { from: { key_code: "f6" }, to: [{ shell_command: SMARTSHADOW_MAIN_COMMAND }] },
         { from: { key_code: "f7" }, to: [{ key_code: "vk_consumer_previous" }] }
     ]);
 });
@@ -308,4 +309,12 @@ test("applyDockSwitchKarabinerProfile normalizes a non-array devices field", () 
 
 test("F6 uses the unified SmartShadow command entry without opening a second UI", () => {
     assert.equal(CODEX_OPEN_COMMAND, "'/Applications/SmartShadow.app/Contents/MacOS/SmartShadowManager' '--open-codex'");
+});
+
+test("F6 opens the SmartShadow main window with internal fill", () => {
+    assert.match(
+        SMARTSHADOW_MAIN_COMMAND,
+        /place --app SmartShadow --placement internal_fill/
+    );
+    assert.equal(SMARTSHADOW_MAIN_COMMAND.includes("--open-codex"), false);
 });

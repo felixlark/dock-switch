@@ -10,13 +10,7 @@ final class AppIdentityTests: XCTestCase {
         let identity = AppIdentity(info: ["CFBundleIdentifier": "org.example.preferences",
             "DockSwitchDataNamespace": "org.example.launcher"])
         XCTAssertEqual(identity.dataNamespace, "org.example.launcher")
-        XCTAssertEqual(identity.notification("customPhraseChanged").rawValue,
-            "org.example.launcher.customPhraseChanged")
-        XCTAssertEqual(identity.notification("customPhraseStatusChanged").rawValue,
-            "org.example.launcher.customPhraseStatusChanged")
-        XCTAssertEqual(identity.notification("customPhraseRecordingChanged").rawValue,
-            "org.example.launcher.customPhraseRecordingChanged")
-        XCTAssertEqual(identity.notification("customPhrasePreviewRequested").rawValue,
-            "org.example.launcher.customPhrasePreviewRequested")
+        XCTAssertEqual(identity.notification("settingsChanged").rawValue,
+            "org.example.launcher.settingsChanged")
     }
 }

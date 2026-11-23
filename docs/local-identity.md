@@ -2,9 +2,7 @@
 
 Public source builds use `io.github.felixlark.dock-switch`. Settings uses its own
 bundle identifier and shares the main app's `DockSwitchDataNamespace`. The main
-process keeps `UserDefaults.standard`; Settings opens that same main domain as a
-suite. All four custom-phrase notifications use the shared namespace. Existing
-shortcut behavior and phrase storage are unchanged.
+process keeps `UserDefaults.standard`; Settings opens that same main domain as a suite.
 
 ## Public builds
 
@@ -91,7 +89,7 @@ never performed into the live app path. A private backup is also retained under
 the external install cache. A failed post-switch check swaps the old bundle back
 and reopens the previously running app. After replacement the configuration
 digest and new signature seal are checked. The installer does not reset
-permissions, change hotkeys, migrate preferences or read phrase content.
+permissions, change hotkeys or migrate preferences.
 
 Some existing bundles have an invalid seal because Settings can save configuration
 inside the bundle. That is an existing architecture limitation. It is recorded as

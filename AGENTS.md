@@ -3,7 +3,7 @@
 
 ## 团队项目职责
 
-- 项目组由**经理**负责 HOW、任务分配、依赖、发布与结果闭环，**专员**承办已授权成果并提交测试、变更及真实运行证据。
+- 项目组由**主任**负责 HOW、任务分配、依赖、发布与结果闭环，**专员**承办已授权成果并提交测试、变更及真实运行证据。
 - 目标与重要取舍由用户同 **ChatGPT 办公室**（秘书长 Bot／秘书）议定；本项目正式任务与跨组织公文通过 GitHub Issue／PR 流转，项目组内部在已授权范围使用 A2A。
 - 共用制度以 [Cabinet/GOVERNANCE.md](https://github.com/smart-shadow/Cabinet/blob/main/GOVERNANCE.md) 为正本，版本校验见[同步规范](https://github.com/smart-shadow/Cabinet/blob/main/organization/source-sync.md)。本仓 `AGENTS.md` 保留当前项目专业边界和执行方法。
 

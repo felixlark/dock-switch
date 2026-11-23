@@ -35,7 +35,7 @@ struct SettingsRootView: View {
     private var phrasePage: some View {
         VStack(alignment: .leading, spacing: 22) {
             Text("自定义短语").font(.largeTitle.weight(.semibold))
-            Text("选中中文词组，按快捷键自动计算五笔码并加入文本替换。")
+            Text("选中文本后按快捷键。中文自动计算五笔码；英文和其他文本会请求快捷码，再加入 macOS 文本替换。")
                 .foregroundStyle(.secondary)
             Divider()
             Toggle("启用选词加入短语", isOn: $store.phraseEnabled)
@@ -50,12 +50,12 @@ struct SettingsRootView: View {
                 .font(.callout).foregroundStyle(.secondary)
             Text(store.phraseStatus).accessibilityIdentifier("customPhraseStatus")
             Divider()
-            Label(store.phraseComponentInstalled ? "本机五笔短语组件已就绪" : "尚未安装本机五笔短语组件",
+            Label(store.phraseComponentInstalled ? "本机短语组件已就绪" : "尚未安装本机短语组件",
                 systemImage: store.phraseComponentInstalled ? "checkmark.circle" : "exclamationmark.triangle")
             Text("写入前自动备份，保留已有短语；同码词需确认后追加。新增后自动切换一次中英并恢复原输入法，提示固定在活动屏幕下方。若仍未出词，请重开使用它的应用。")
                 .foregroundStyle(.secondary)
             if !store.phraseComponentInstalled {
-                Text("此功能需要本机已配置的五笔编码与短语备份组件。安装位置：~/Library/Application Support/wubi-phrase。")
+                Text("此功能需要本机已配置的短语编码、备份与追加组件。安装位置：~/Library/Application Support/wubi-phrase。")
                     .font(.callout).foregroundStyle(.secondary).textSelection(.enabled)
             }
             Spacer()

@@ -31,7 +31,7 @@ permissions or alter launcher Shift mappings to work around this error.
 Codex workspace enhancements are maintained by the standalone
 [Codex Plus project](https://github.com/felixlark/codex-plus).
 
-## Custom phrases (local Wubi component)
+## Custom phrases (local phrase component)
 
 Open **Settings → 自定义短语** to enable, record and apply the global
 selected-text shortcut (default **Command+Shift+grave**, the key left of `1`).
@@ -48,13 +48,17 @@ This optional integration requires the already provisioned local component at
 Without the component the shortcut is not registered. The component is responsible
 for schema checks, consistent backups and append-only writes to the user's macOS
 text replacements; this is an unsupported local storage adapter, not an Apple API.
+The append adapter must support `--any-text` for non-Wubi replacements.
 Existing phrases remain intact; code collisions require confirmation.
 
 The native app reads only the selected text of the focused Accessibility element,
 rejects secure text fields, and displays a nonactivating tooltip. It does not use
-the clipboard or AppleScript. A recognized legacy **选词加入五笔短语** service
-shortcut is retired after successful native registration; its original value is
-backed up in the app's preferences, preserving other global shortcuts.
+the clipboard or AppleScript. Chinese text is encoded as a Wubi shortcut. English
+and other text keep spaces, punctuation and Unicode intact and request a shortcut
+such as `ippl` for `Implement plan.` before using the same backup and append path.
+A recognized legacy **选词加入五笔短语** service shortcut is retired after
+successful native registration; its original value is backed up in the app's
+preferences, preserving other global shortcuts.
 After a new phrase is stored, the app uses public Text Input Source Services to
 switch once between enabled Apple Wubi and English sources and restore the original
 source. It skips the refresh if the foreground app or input source has changed;

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Resolve and activate Feishu by its canonical application identity (`com.electron.lark`), unify Feishu/Lark/飞书 names, exclude similarly named helpers, and preserve the F shortcut and configured window placement. Add Node and Swift regression coverage.
+- Allow the custom phrase shortcut to add English and other non-Wubi text after requesting a replacement shortcut, while preserving automatic Wubi encoding for Chinese text.
 
 ### Security
 

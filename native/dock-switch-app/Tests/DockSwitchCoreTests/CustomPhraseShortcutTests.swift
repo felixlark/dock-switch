@@ -4,6 +4,29 @@ import XCTest
 @testable import DockSwitchCore
 
 final class CustomPhraseShortcutTests: XCTestCase {
+    func testManualReplacementShortcutAcceptsNonChineseText() {
+        XCTAssertEqual(CustomPhraseInputPolicy.normalizedShortcut(" ippl "), "ippl")
+        XCTAssertEqual(CustomPhraseInputPolicy.normalizedShortcut("omw"), "omw")
+        XCTAssertNil(CustomPhraseInputPolicy.normalizedShortcut(""))
+        XCTAssertNil(CustomPhraseInputPolicy.normalizedShortcut("   "))
+        XCTAssertNil(CustomPhraseInputPolicy.normalizedShortcut("two words"))
+        XCTAssertNil(CustomPhraseInputPolicy.normalizedShortcut("line\nbreak"))
+        XCTAssertNil(CustomPhraseInputPolicy.normalizedShortcut("nul\0byte"))
+    }
+
+    func testOnlyExpectedWubiRejectionsOpenManualShortcutPath() {
+        XCTAssertTrue(CustomPhraseInputPolicy.isWubiTextRejection("请选择一个连续中文词组，不要包含空格或换行。"))
+        XCTAssertTrue(CustomPhraseInputPolicy.isWubiTextRejection("五笔 86 码表中没有这些字：@"))
+        XCTAssertFalse(CustomPhraseInputPolicy.isWubiTextRejection("No such file or directory"))
+        XCTAssertFalse(CustomPhraseInputPolicy.isWubiTextRejection(""))
+    }
+
+    func testOlderPhraseComponentGetsAnActionableUpgradeMessage() {
+        XCTAssertTrue(CustomPhraseInputPolicy.componentNeedsAnyTextUpgrade(
+            "append_phrase.py: error: unrecognized arguments: --any-text"))
+        XCTAssertFalse(CustomPhraseInputPolicy.componentNeedsAnyTextUpgrade("Invalid Wubi code"))
+    }
+
     func testSubroleFailuresCannotReadSelection() {
         XCTAssertFalse(CustomPhraseSelectionPolicy.mayRead(subroleStatus: .cannotComplete, subrole: nil))
         XCTAssertFalse(CustomPhraseSelectionPolicy.mayRead(subroleStatus: .apiDisabled, subrole: nil))

@@ -18,7 +18,6 @@ cp "$IDENTITY_DIR/settings.plist" "$APP_DIR/Contents/Info.plist"
 swiftc -module-cache-path "$MODULE_CACHE" -parse-as-library -O -framework SwiftUI -framework AppKit \
   "$SOURCE_DIR"/*.swift \
   "$ROOT_DIR/native/dock-switch-app/Sources/DockSwitchCore/AppIdentity.swift" \
-  "$ROOT_DIR/native/dock-switch-app/Sources/DockSwitchCore/CustomPhraseShortcut.swift" \
   -o "$APP_DIR/Contents/MacOS/DockSwitchSettings"
 printf 'APPL????' > "$APP_DIR/Contents/PkgInfo"
 python3 "$ROOT_DIR/scripts/build-identity.py" sign-settings --directory "$IDENTITY_DIR" --app "$APP_DIR"

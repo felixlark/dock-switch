@@ -8,7 +8,6 @@ import SwiftUI
 final class DockSwitchApp: NSObject, NSApplicationDelegate {
     private static var sharedDelegate: DockSwitchApp?
     private let configStore = ConfigStore()
-    private let customPhrases = CustomPhraseController()
     private let displayService = DisplayService()
     private let dockSnapshotService = DockSnapshotService()
     private let dockVisibilityService = DockVisibilityService()
@@ -52,14 +51,12 @@ final class DockSwitchApp: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.accessory)
         setupStatusItem()
         registerHotKey()
-        customPhrases.start()
         startControlServer()
         startGokit5SerialListener()
         _ = ensureAccessibilityPermission(prompt: true)
     }
 
     func applicationWillTerminate(_ notification: Notification) {
-        customPhrases.stop()
         hideLauncher()
         if let hotKeyRef { UnregisterEventHotKey(hotKeyRef) }
         if let eventHandler { RemoveEventHandler(eventHandler) }
@@ -217,9 +214,7 @@ final class DockSwitchApp: NSObject, NSApplicationDelegate {
             var hotKeyID = EventHotKeyID()
             GetEventParameter(event, EventParamName(kEventParamDirectObject), EventParamType(typeEventHotKeyID), nil, MemoryLayout<EventHotKeyID>.size, nil, &hotKeyID)
             guard hotKeyID.signature == fourCharCode("DS20") else { return OSStatus(eventNotHandledErr) }
-            if hotKeyID.id == 2 {
-                DispatchQueue.main.async { app.customPhrases.addSelection() }
-            } else if hotKeyID.id == 1 {
+            if hotKeyID.id == 1 {
                 DispatchQueue.main.async {
                     app.toggleLauncher()
                 }

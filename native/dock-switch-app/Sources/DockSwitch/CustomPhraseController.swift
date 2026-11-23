@@ -30,9 +30,9 @@ final class CustomPhraseController {
                 let variant = note.object as? String ?? "added"
                 let message: String
                 switch variant {
-                case "known": message = "已有：原生短语 → dtty"
-                case "error": message = "未添加：请选择一个连续中文词组，不要包含空格或换行。"
-                default: message = "已入库：原生短语 → dtty\n已切换中英并恢复原输入法"
+                case "known": message = "已有：Implement plan. → ippl"
+                case "error": message = "未添加：请先选中一段文本。"
+                default: message = "已入库：Implement plan. → ippl\n已切换中英并恢复原输入法"
                 }
                 let appearance = variant == "light" ? NSAppearance(named: .aqua)
                     : variant == "dark" ? NSAppearance(named: .darkAqua) : nil
@@ -139,7 +139,7 @@ final class CustomPhraseController {
         var focused: CFTypeRef?
         guard AXUIElementCopyAttributeValue(system, kAXFocusedUIElementAttribute as CFString, &focused) == .success,
               let focused, CFGetTypeID(focused) == AXUIElementGetTypeID() else {
-            showTip("请先选中一个中文词组"); return
+            showTip("请先选中一段文本"); return
         }
         let element = focused as! AXUIElement
         var sourcePID: pid_t = 0
@@ -153,28 +153,102 @@ final class CustomPhraseController {
         var selected: CFTypeRef?
         guard AXUIElementCopyAttributeValue(element, kAXSelectedTextAttribute as CFString, &selected) == .success,
               let phrase = selected as? String, !phrase.isEmpty else {
-            showTip("请先选中一个中文词组；当前应用需支持选中文本读取"); return
+            showTip("请先选中一段文本；当前应用需支持选中文本读取"); return
         }
         operationScreen = activeScreen()
         let originalInput = PhraseInputSource.currentID()
+        let originalApplication = NSWorkspace.shared.frontmostApplication
         busy = true
         DispatchQueue.global(qos: .userInitiated).async { [self] in
             do {
-                let code = try run("encode.py", ["encode", phrase]).trimmingCharacters(in: .whitespacesAndNewlines)
-                let checked = try check(phrase, code)
+                if let code = try wubiCode(for: phrase) {
+                    DispatchQueue.main.async { [self] in
+                        prepareAddition(phrase: phrase, code: code, manualShortcut: false,
+                            originalInput: originalInput, sourcePID: sourcePID,
+                            originalApplication: originalApplication)
+                    }
+                } else {
+                    DispatchQueue.main.async { [self] in
+                        guard let code = promptForShortcut(for: phrase) else {
+                            busy = false
+                            operationScreen = nil
+                            restore(originalApplication)
+                            return
+                        }
+                        prepareAddition(phrase: phrase, code: code, manualShortcut: true,
+                            originalInput: originalInput, sourcePID: sourcePID,
+                            originalApplication: originalApplication)
+                    }
+                }
+            } catch { fail(error) }
+        }
+    }
+
+    private func wubiCode(for phrase: String) throws -> String? {
+        let result = try execute("encode.py", ["encode", phrase])
+        guard result.status == 0 else {
+            let output = result.output.trimmingCharacters(in: .whitespacesAndNewlines)
+            if CustomPhraseInputPolicy.isWubiTextRejection(output) { return nil }
+            throw PhraseError(output.isEmpty ? "无法计算五笔码" : output)
+        }
+        let code = result.output.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !code.isEmpty else { throw PhraseError("五笔编码结果为空，未写入。") }
+        return code
+    }
+
+    private func promptForShortcut(for phrase: String, error: String? = nil) -> String? {
+        let alert = NSAlert()
+        alert.messageText = "输入快捷码"
+        let shown = phrase.count > 240 ? String(phrase.prefix(240)) + "…" : phrase
+        alert.informativeText = "将添加到 macOS 文本替换：\n“\(shown)”\n\n快捷码不能包含空格或换行。"
+            + (error.map { "\n\n\($0)" } ?? "")
+        alert.addButton(withTitle: "加入短语")
+        alert.addButton(withTitle: "取消")
+        let field = NSTextField(frame: NSRect(x: 0, y: 0, width: 300, height: 24))
+        field.placeholderString = "例如 ippl"
+        field.font = .monospacedSystemFont(ofSize: 14, weight: .regular)
+        alert.accessoryView = field
+        alert.window.initialFirstResponder = field
+        NSApp.activate(ignoringOtherApps: true)
+        guard alert.runModal() == .alertFirstButtonReturn else { return nil }
+        guard let code = CustomPhraseInputPolicy.normalizedShortcut(field.stringValue) else {
+            return promptForShortcut(for: phrase, error: "快捷码不能为空，也不能包含空格或换行。")
+        }
+        return code
+    }
+
+    private func prepareAddition(phrase: String, code: String, manualShortcut: Bool,
+                                 originalInput: String?, sourcePID: pid_t,
+                                 originalApplication: NSRunningApplication?) {
+        DispatchQueue.global(qos: .userInitiated).async { [self] in
+            do {
+                let checked = try check(phrase, code, anyText: manualShortcut)
                 DispatchQueue.main.async { [self] in
-                    if checked == "KNOWN" { finish("已有：\(phrase) → \(code)"); return }
+                    if checked == "KNOWN" {
+                        if manualShortcut { restore(originalApplication) }
+                        finish("已有：\(phrase) → \(code)")
+                        return
+                    }
+                    var collisionConfirmed = false
                     if checked == "COLLISION" {
                         let alert = NSAlert()
-                        alert.messageText = "五笔码 \(code) 已有其他短语"
+                        alert.messageText = "快捷码 \(code) 已有其他短语"
                         alert.informativeText = "是否追加“\(phrase)”？已有短语将保留。"
                         alert.addButton(withTitle: "追加"); alert.addButton(withTitle: "取消")
-                        guard alert.runModal() == .alertFirstButtonReturn else { busy = false; return }
+                        NSApp.activate(ignoringOtherApps: true)
+                        guard alert.runModal() == .alertFirstButtonReturn else {
+                            busy = false
+                            operationScreen = nil
+                            restore(originalApplication)
+                            return
+                        }
+                        collisionConfirmed = true
                     }
                     DispatchQueue.global(qos: .userInitiated).async { [self] in
                         do {
                             var args = [phrase, code, "--apply"]
-                            if checked == "COLLISION" { args.append("--allow-collision") }
+                            if manualShortcut { args.append("--any-text") }
+                            if collisionConfirmed { args.append("--allow-collision") }
                             let result = try run("db-candidate/append_phrase.py", args)
                             guard let data = result.data(using: .utf8),
                                   let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
@@ -182,6 +256,9 @@ final class CustomPhraseController {
                                 throw PhraseError("入库结果未知，请勿重复添加，先核查词库。")
                             }
                             DispatchQueue.main.async { [self] in
+                                if manualShortcut || collisionConfirmed {
+                                    restore(originalApplication)
+                                }
                                 if json["status"] as? String == "KNOWN" {
                                     finish("已有：\(phrase) → \(code)")
                                 } else {
@@ -190,15 +267,21 @@ final class CustomPhraseController {
                                     }
                                 }
                             }
-                        } catch { fail(error) }
+                        } catch {
+                            fail(error, restore: manualShortcut || collisionConfirmed ? originalApplication : nil)
+                        }
                     }
                 }
-            } catch { fail(error) }
+            } catch {
+                fail(error, restore: manualShortcut ? originalApplication : nil)
+            }
         }
     }
 
-    private func check(_ phrase: String, _ code: String) throws -> String {
-        let result = try run("db-candidate/append_phrase.py", [phrase, code])
+    private func check(_ phrase: String, _ code: String, anyText: Bool = false) throws -> String {
+        var args = [phrase, code]
+        if anyText { args.append("--any-text") }
+        let result = try run("db-candidate/append_phrase.py", args)
         guard let data = result.data(using: .utf8), let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
               let status = object["status"] as? String, ["NEW", "KNOWN", "COLLISION"].contains(status) else {
             throw PhraseError("词库检查结果无法识别，未写入。")
@@ -207,6 +290,18 @@ final class CustomPhraseController {
     }
 
     private func run(_ script: String, _ arguments: [String]) throws -> String {
+        let result = try execute(script, arguments)
+        guard result.status == 0 else {
+            let output = result.output.trimmingCharacters(in: .whitespacesAndNewlines)
+            if CustomPhraseInputPolicy.componentNeedsAnyTextUpgrade(output) {
+                throw PhraseError("本机短语组件不支持任意文本，请更新 append_phrase.py 的 --any-text 支持。")
+            }
+            throw PhraseError(output)
+        }
+        return result.output
+    }
+
+    private func execute(_ script: String, _ arguments: [String]) throws -> (status: Int32, output: String) {
         let url = component.appendingPathComponent(script)
         guard FileManager.default.fileExists(atPath: url.path) else {
             throw PhraseError("未安装本机五笔短语组件，请查看“自定义短语”设置。")
@@ -219,11 +314,19 @@ final class CustomPhraseController {
         try process.run()
         let output = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
         process.waitUntilExit()
-        guard process.terminationStatus == 0 else { throw PhraseError(output.trimmingCharacters(in: .whitespacesAndNewlines)) }
-        return output
+        return (process.terminationStatus, output)
     }
 
-    private func fail(_ error: Error) { DispatchQueue.main.async { [self] in finish("未添加：\(error.localizedDescription)") } }
+    private func restore(_ application: NSRunningApplication?) {
+        application?.activate(options: [.activateIgnoringOtherApps])
+    }
+
+    private func fail(_ error: Error, restore application: NSRunningApplication? = nil) {
+        DispatchQueue.main.async { [self] in
+            restore(application)
+            finish("未添加：\(error.localizedDescription)")
+        }
+    }
     private func finish(_ message: String) {
         busy = false
         showTip(message, screen: operationScreen)

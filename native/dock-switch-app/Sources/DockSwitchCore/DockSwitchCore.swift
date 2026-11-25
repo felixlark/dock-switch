@@ -1239,26 +1239,27 @@ public enum Gokit5Serial {
     }
 
     public static func action(for button: String) -> Gokit5Action? {
+        // The controller is mounted 90 degrees clockwise from its original orientation.
         switch normalizeButton(button) {
         case "minus":
             return Gokit5Action(
-                mouseTarget: "side_left"
+                mouseTarget: "external"
             )
         case "voice":
             return Gokit5Action(
-                mouseTarget: "external"
+                mouseTarget: "side_right"
             )
         case "switch":
             return Gokit5Action(
-                mouseTarget: "side_right"
+                mouseTarget: "internal"
             )
         case "green":
             return Gokit5Action(
-                mouseTarget: "side_right"
+                mouseTarget: "internal"
             )
         case "plus":
             return Gokit5Action(
-                mouseTarget: "internal"
+                mouseTarget: "side_left"
             )
         default:
             return nil

@@ -14,13 +14,13 @@ Behavior
 Button mapping
 --------------
 
-The firmware sends host-button events that move the pointer to display targets and click the target point:
+The firmware sends host-button events that move the pointer to display targets and click the target point. The mapping below assumes the controller is mounted 90 degrees clockwise from its original orientation:
 
-- ``minus`` -> left side display center
-- ``plus`` -> internal display center
-- ``voice`` -> external display center
-- ``green`` -> right side display center
-- ``switch`` -> right side display center
+- ``minus`` -> external display center
+- ``plus`` -> left side display center
+- ``voice`` -> right side display center
+- ``green`` -> internal display center
+- ``switch`` -> internal display center
 
 Hold ``Command`` while pressing a button to insert a fixed phrase at the current caret instead of moving the pointer:
 

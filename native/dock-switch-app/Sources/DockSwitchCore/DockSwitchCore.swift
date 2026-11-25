@@ -1239,26 +1239,27 @@ public enum Gokit5Serial {
     }
 
     public static func action(for button: String) -> Gokit5Action? {
+        // The controller is mounted 90 degrees clockwise from its original orientation.
         switch normalizeButton(button) {
         case "minus":
             return Gokit5Action(
-                mouseTarget: "side_left"
+                mouseTarget: "external"
             )
         case "voice":
             return Gokit5Action(
-                mouseTarget: "external"
+                mouseTarget: "side_right"
             )
         case "switch":
             return Gokit5Action(
-                mouseTarget: "side_right"
+                mouseTarget: "internal"
             )
         case "green":
             return Gokit5Action(
-                mouseTarget: "side_right"
+                mouseTarget: "internal"
             )
         case "plus":
             return Gokit5Action(
-                mouseTarget: "internal"
+                mouseTarget: "side_left"
             )
         default:
             return nil
@@ -2119,7 +2120,6 @@ public final class ControlServer {
     private let showMouseFeedback: (CGPoint) -> Void
     private let getGokit5Status: () -> [String: Any]
     private let selectCodexDisplay: ([String: Any]) -> [String: Any]
-    private let toolCommand: ([String: Any]) -> [String: Any]
     private let launcherService: LauncherService
 
     public init(
@@ -2129,7 +2129,6 @@ public final class ControlServer {
         hideLauncher: @escaping () -> Bool,
         showMouseFeedback: @escaping (CGPoint) -> Void = { _ in },
         getGokit5Status: @escaping () -> [String: Any] = { ["enabled": false, "status": "unavailable", "running": false] },
-        toolCommand: @escaping ([String: Any]) -> [String: Any] = { _ in ["ok": false, "error": "Tool routing is unavailable"] },
         selectCodexDisplay: @escaping ([String: Any]) -> [String: Any] = { _ in ["ok": false, "error": "select-codex-display is unavailable"] }
     ) {
         self.displayService = displayService
@@ -2139,7 +2138,6 @@ public final class ControlServer {
         self.showMouseFeedback = showMouseFeedback
         self.getGokit5Status = getGokit5Status
         self.selectCodexDisplay = selectCodexDisplay
-        self.toolCommand = toolCommand
         self.launcherService = LauncherService(windowPlacement: windowPlacement, showMouseFeedback: showMouseFeedback)
     }
 
@@ -2210,8 +2208,6 @@ public final class ControlServer {
 
     private func handle(_ command: [String: Any]) -> [String: Any] {
         switch command["command"] as? String {
-        case "tool-open", "tool-place", "tool-status", "tool-routing", "tool-exempt", "tool-recover":
-            return toolCommand(command)
         case "debug-displays":
             let displays = displayService.displays().map { display -> [String: Any] in
                 [

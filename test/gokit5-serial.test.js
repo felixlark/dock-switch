@@ -38,21 +38,21 @@ test("parseGokit5ButtonLine rejects removed plus aliases", () => {
     assert.equal(parseGokit5ButtonLine("GOKIT5_HOST_BUTTON:volume+"), "");
 });
 
-test("mapGokit5ButtonToAction maps physical keys to mouse display actions", () => {
+test("mapGokit5ButtonToAction follows the clockwise-rotated controller layout", () => {
     assert.deepEqual(mapGokit5ButtonToAction("minus"), {
-        mouse_target: "side_left"
-    });
-    assert.deepEqual(mapGokit5ButtonToAction("voice"), {
         mouse_target: "external"
     });
-    assert.deepEqual(mapGokit5ButtonToAction("switch"), {
+    assert.deepEqual(mapGokit5ButtonToAction("voice"), {
         mouse_target: "side_right"
+    });
+    assert.deepEqual(mapGokit5ButtonToAction("switch"), {
+        mouse_target: "internal"
     });
     assert.deepEqual(mapGokit5ButtonToAction("green"), {
-        mouse_target: "side_right"
+        mouse_target: "internal"
     });
     assert.deepEqual(mapGokit5ButtonToAction("plus"), {
-        mouse_target: "internal"
+        mouse_target: "side_left"
     });
     assert.equal(mapGokit5ButtonToAction("+"), null);
     assert.equal(mapGokit5ButtonToAction("add"), null);
@@ -174,7 +174,7 @@ test("createGokit5SerialListener keeps the serial fd open while applying stty", 
     assert.equal(events.at(-1), "destroy");
 });
 
-test("createGokit5SerialListener dispatches plus to the internal mouse display action", () => {
+test("createGokit5SerialListener dispatches plus to the left-side mouse display action", () => {
     const stream = new EventEmitter();
     stream.destroy = () => {};
     const actions = [];

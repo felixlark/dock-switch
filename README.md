@@ -31,40 +31,6 @@ permissions or alter launcher Shift mappings to work around this error.
 Codex workspace enhancements are maintained by the standalone
 [Codex Plus project](https://github.com/felixlark/codex-plus).
 
-## Custom phrases (local Wubi component)
-
-Open **Settings → 自定义短语** to enable, record and apply the global
-selected-text shortcut (default **Command+Shift+grave**, the key left of `1`).
-Dock-switch registers the physical key code with macOS, independently of the
-current input source. Changes take effect without restarting the target app.
-Recording temporarily releases the active combination; Escape, leaving the
-settings window or quitting Settings restores it. Failed registration keeps
-the previous working combination. The preference survives app reinstallations.
-
-This optional integration requires the already provisioned local component at
-`~/Library/Application Support/wubi-phrase/`: `encode.py`, `wubi86.dict.yaml`,
-`known-phrases.json`, `db-candidate/append_phrase.py`, and
-`db-candidate/schema.json`. These user-specific files are not bundled or uploaded.
-Without the component the shortcut is not registered. The component is responsible
-for schema checks, consistent backups and append-only writes to the user's macOS
-text replacements; this is an unsupported local storage adapter, not an Apple API.
-Existing phrases remain intact; code collisions require confirmation.
-
-The native app reads only the selected text of the focused Accessibility element,
-rejects secure text fields, and displays a nonactivating tooltip. It does not use
-the clipboard or AppleScript. A recognized legacy **选词加入五笔短语** service
-shortcut is retired after successful native registration; its original value is
-backed up in the app's preferences, preserving other global shortcuts.
-After a new phrase is stored, the app uses public Text Input Source Services to
-switch once between enabled Apple Wubi and English sources and restore the original
-source. It skips the refresh if the foreground app or input source has changed;
-existing phrases, failures and previews never switch input sources. If switching
-is unavailable or fails, the tooltip gives a manual recovery hint. Input-client
-caching can still vary; reopen that client if the new phrase remains absent.
-The nonactivating tooltip is centered above the bottom of the active window's
-display, inside its usable area, independent of the mouse position. No input
-service is restarted and no app is activated by the refresh.
-
 ## Install
 
 Download the latest macOS app from [GitHub Releases](https://github.com/felixlark/dock-switch/releases) and move `dock-switch.app` into `/Applications`. On first use, grant Accessibility access when prompted (System Settings → Privacy & Security → Accessibility); it is used to inspect Dock items and control window placement. macOS may also request Automation access to control the Dock. Only enable optional input/automation permissions when using the corresponding feature.
@@ -102,51 +68,11 @@ dock-switch-cli gokit5-status
 
 `displays` reports current display bounds and work areas as JSON. `place` accepts an application name or PID and a supported placement; `move` accepts an application name or PID and explicit bounds. `codex-display` targets a symbolic display (`side_left`, `external`, `side_right`, or `internal`). `get-chrome-window` and `move-chrome-window` require `--profile-dir` and operate on that Chrome profile. Run `dock-switch-cli` without arguments for the complete command syntax. When the control socket is not running, the CLI attempts to launch `/Applications/dock-switch.app`.
 
-## Quiet tool windows
+## Codex tool windows
 
-Version 1.1.0 adds background tool opening and per-window placement in the existing
-native Dock Switch process. Codex keeps its saved launcher placement. Identified
-independent tool windows go to the selected rightmost external display without
-activation, raising, pointer movement, Space changes, or forced fullscreen exit.
-The display is remembered by system identity; disconnecting it does not silently
-send tools to the internal display. The status menu provides **工具窗口集中到右屏**,
-**当前窗口保留原位**, and **找回屏外工具窗口**.
-
-Open the installed Settings tool in the background:
-
-```sh
-node /Applications/dock-switch.app/Contents/Resources/app/bin/dock-switch-cli.js tool-open --app-path /Applications/dock-switch.app/Contents/Resources/DockSwitchSettings.app
-```
-
-Inspect the current result:
-
-```sh
-node /Applications/dock-switch.app/Contents/Resources/app/bin/dock-switch-cli.js tool-status
-```
-
-`tool-open` also accepts `--url` for a file or web resource. An ordinary app never
-gets a process-wide window rule just because it was launched. File resources use
-exact public document identity and exclude every manual window present before
-the request. Reuse as an existing window/tab consumes the request without moving
-that window. Web resources and other unidentifiable windows require `tool-place`
-with an explicit PID and public window ID. Use `--dedicated` only for an app that
-exists exclusively as an agent tool, since its future windows then belong to the
-tool session. Known Settings/utility apps already have dedicated rules.
-
-The request acknowledgement proves only that an open was requested. `tool-status`
-distinguishes waiting, placed, already managed, existing-window reuse, lack of a
-window rule, and observation failure. A lost response after sending a command is
-reported as unknown and is never automatically replayed. Pausing removes window
-observers; handled windows are not pulled back after manual moves. Recovery acts
-only on managed offscreen windows and is explicitly requested.
-
-Normal user launcher actions still activate apps intentionally. Tool opening uses
-`NSWorkspace.OpenConfiguration.activates=false`; tools that activate themselves
-need to be fixed at their own entry. Sheets, in-window web overlays and system
-permission dialogs retain their normal owners. Real foreground keyboard/mouse
-automation is still shared with the user.
-
-Design and acceptance scope: [quiet tool windows](docs/designs/quiet-tool-windows.md).
+Codex-specific quiet tool opening and window routing are owned by
+[Codex Plus](https://github.com/felixlark/codex-plus). Dock Switch retains its
+general launcher and explicit window placement commands.
 
 ## Launcher configuration
 

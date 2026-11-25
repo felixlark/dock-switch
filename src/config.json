@@ -31,9 +31,9 @@
         {
             "name": "X",
             "key": "X",
-            "screen": "1",
+            "screen": "side_left",
             "kind": "web_app",
-            "placement": "internal_fill",
+            "placement": "side_left_fill",
             "open_path": "~/Applications/Chromium Apps.localized/X.app",
             "app_url": "https://x.com/?utm_source=homescreen&utm_medium=shortcut"
         },

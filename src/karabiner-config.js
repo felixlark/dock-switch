@@ -2,7 +2,7 @@ const fs = require("fs");
 const os = require("os");
 const path = require("path");
 
-const DOCK_SWITCH_RULE_DESCRIPTION = "dock-switch launcher shortcuts with direct F3/F6 apps";
+const DOCK_SWITCH_RULE_DESCRIPTION = "dock-switch shortcuts with F3 ChatGPT Web and F6 SmartShadow main";
 const MANAGED_FN_FUNCTION_KEYS = ["f3", "f6"];
 const LOGITECH_TOP_ROW_CONSUMER_DEVICE = {
     identifiers: {
@@ -17,20 +17,31 @@ function shellCommand(parts) {
     return parts.map(part => `'${part.replace(/'/g, "'\\''")}'`).join(" ");
 }
 
-const SMARTSHADOW_DIRECT_COMMAND = shellCommand([
+const F3_CHATGPT_WEB_COMMAND = shellCommand([
     "/bin/zsh",
     "-lc",
     [
-        "APP=/Applications/SmartShadow.app",
+        "APP=\"$HOME/Applications/Chrome Apps.localized/ChatGPT.app\"",
         "NODE=/opt/homebrew/bin/node",
         "CLI=/Applications/dock-switch.app/Contents/Resources/app/bin/dock-switch-cli.js",
         "/usr/bin/open \"$APP\" >/dev/null 2>&1",
-        "[[ -x \"$NODE\" && -f \"$CLI\" ]] && \"$NODE\" \"$CLI\" place --app SmartShadow --placement side_left_fill >/dev/null 2>&1 &"
+        "PID=\"\"",
+        "for attempt in {1..30}; do PID=$(/usr/bin/pgrep -f -x \"$APP/Contents/MacOS/app_mode_loader\" | /usr/bin/head -n 1); [[ -n \"$PID\" ]] && break; /bin/sleep 0.1; done",
+        "[[ -x \"$NODE\" && -f \"$CLI\" && -n \"$PID\" ]] && \"$NODE\" \"$CLI\" place --pid \"$PID\" --placement side_left_fill >/dev/null 2>&1 &"
     ].join("; ")
 ]);
-// Plus opens the signed host and requests placement by its exact PID after launch.
-const CODEX_PLUS_COMMAND = shellCommand([
-    "/usr/bin/open", "/Applications/Codex Plus.app", "--args", "--open-codex"
+// SmartShadow routes the request to the signed interaction helper.
+const CODEX_OPEN_COMMAND = shellCommand([
+    "/Applications/SmartShadow.app/Contents/MacOS/SmartShadowManager", "--open-codex"
+]);
+const SMARTSHADOW_MAIN_COMMAND = shellCommand([
+    "/bin/zsh",
+    "-lc",
+    [
+        "NODE=/opt/homebrew/bin/node",
+        "CLI=/Applications/dock-switch.app/Contents/Resources/app/bin/dock-switch-cli.js",
+        "[[ -x \"$NODE\" && -f \"$CLI\" ]] && \"$NODE\" \"$CLI\" place --app SmartShadow --placement internal_fill >/dev/null 2>&1 &"
+    ].join("; ")
 ]);
 
 function fromKeyCode(keyCode) {
@@ -63,7 +74,7 @@ function buildDockSwitchKarabinerRule() {
             {
                 type: "basic",
                 from: fromKeyCode("f3"),
-                to: [{ shell_command: SMARTSHADOW_DIRECT_COMMAND }]
+                to: [{ shell_command: F3_CHATGPT_WEB_COMMAND }]
             },
             {
                 type: "basic",
@@ -71,17 +82,17 @@ function buildDockSwitchKarabinerRule() {
                     apple_vendor_keyboard_key_code: "mission_control",
                     modifiers: { optional: ["any"] }
                 },
-                to: [{ shell_command: SMARTSHADOW_DIRECT_COMMAND }]
+                to: [{ shell_command: F3_CHATGPT_WEB_COMMAND }]
             },
             {
                 type: "basic",
                 from: fromKeyCode("f6"),
-                to: [{ shell_command: CODEX_PLUS_COMMAND }]
+                to: [{ shell_command: SMARTSHADOW_MAIN_COMMAND }]
             },
             {
                 type: "basic",
                 from: fromMandatoryFnKeyCode("f5"),
-                to: [{ shell_command: CODEX_PLUS_COMMAND }]
+                to: [{ shell_command: CODEX_OPEN_COMMAND }]
             },
             {
                 type: "basic",
@@ -89,7 +100,7 @@ function buildDockSwitchKarabinerRule() {
                     generic_desktop: "do_not_disturb",
                     modifiers: { optional: ["any"] }
                 },
-                to: [{ shell_command: CODEX_PLUS_COMMAND }]
+                to: [{ shell_command: CODEX_OPEN_COMMAND }]
             }
         ]
     };
@@ -145,13 +156,13 @@ function managedFunctionKeyEntry(keyCode) {
     if (keyCode === "f3") {
         return {
             from: { key_code: keyCode },
-            to: [{ shell_command: SMARTSHADOW_DIRECT_COMMAND }]
+            to: [{ shell_command: F3_CHATGPT_WEB_COMMAND }]
         };
     }
     if (keyCode === "f6") {
         return {
             from: { key_code: keyCode },
-            to: [{ shell_command: CODEX_PLUS_COMMAND }]
+            to: [{ shell_command: SMARTSHADOW_MAIN_COMMAND }]
         };
     }
     return {
@@ -283,9 +294,10 @@ function writeKarabinerConfig(config, configPath = defaultKarabinerConfigPath())
 
 module.exports = {
     DOCK_SWITCH_RULE_DESCRIPTION,
-    CODEX_PLUS_COMMAND,
+    CODEX_OPEN_COMMAND,
+    F3_CHATGPT_WEB_COMMAND,
     LOGITECH_TOP_ROW_CONSUMER_DEVICE,
-    SMARTSHADOW_DIRECT_COMMAND,
+    SMARTSHADOW_MAIN_COMMAND,
     applyDockSwitchKarabinerConfig,
     applyDockSwitchKarabinerProfile,
     buildDockSwitchKarabinerRule,

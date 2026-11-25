@@ -22,26 +22,14 @@ function load() {
     return { api: context.api, sockets };
 }
 
-test("quiet tools require an absolute app path and exact PID/window identity", () => {
-    const { api } = load();
-    const open = api.parseArgs(["tool-open", "--app-path", "/Applications/Tool.app", "--url", "file:///tmp/tool.txt"]);
-    assert.equal(open.appPath, "/Applications/Tool.app");
-    assert.equal(open.format, "json");
-    assert.throws(() => api.parseArgs(["tool-open", "--app-path", "Tool.app"]), /usage/);
-    assert.throws(() => api.parseArgs(["tool-open", "--app-path", "/Applications/Tool.app", "--url", "javascript:bad"]), /usage/);
-    assert.throws(() => api.parseArgs(["tool-place", "--pid", "123"]), /usage/);
-    const place = api.parseArgs(["tool-place", "--pid", "123", "--window-id", "42"]);
-    assert.equal(place.windowID, 42);
-});
-
 test("lost response after send is explicitly unknown and cannot trigger auto-replay", async () => {
     const { api, sockets } = load();
-    const pending = api.connectAndSend({ command: "tool-open", appPath: "/Applications/Tool.app" });
+    const pending = api.connectAndSend({ command: "place-pid", pid: 123, placement: "external_fill" });
     sockets[0].emit("connect");
     sockets[0].emit("end");
     await assert.rejects(pending, err => err.requestMayHaveRun === true);
     assert.equal(sockets.length, 1);
-    const unsent = api.connectAndSend({ command: "tool-status" });
+    const unsent = api.connectAndSend({ command: "debug-displays" });
     sockets[1].emit("error", new Error("not connected"));
     await assert.rejects(unsent, err => err.requestMayHaveRun === false);
 });

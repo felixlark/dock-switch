@@ -1,8 +1,8 @@
 {
     "name": "dock-switch",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "description": "dock-switch",
-    "author": "Longbiao CHEN",
+    "author": "felixlark",
     "main": "src/main.js",
     "bin": {
         "dock-switch-cli": "bin/dock-switch-cli.js"
@@ -13,7 +13,7 @@
         "popper.js": "^1.15.0"
     },
     "devDependencies": {
-        "electron": "41.10.6",
+        "electron": "42.11.16",
         "electron-builder": "26.15.3"
     },
     "scripts": {
@@ -25,12 +25,12 @@
         "build:addon": "PYTHON=/usr/bin/python3 node-gyp rebuild --directory native/dock-query --target=$(node -p \"require('electron/package.json').version\") --dist-url=https://electronjs.org/headers",
         "go": "yarn build:addon; killall -9 dock-switch; electron .",
         "dist": "yarn build:settings && yarn build:native && /bin/bash scripts/install-native-app.sh",
-        "dist:signed": "yarn build:settings && yarn build:addon && CSC_NAME='Apple Development: LONGBIAO CHEN (YRQ5DV25KM)' electron-builder --mac dir"
+        "dist:signed": "yarn build:native"
     },
     "license": "MIT",
     "build": {
         "asar": false,
-        "appId": "me.longbiaochen.dock-switch",
+        "appId": "io.github.felixlark.dock-switch",
         "directories": {
             "buildResources": "resources"
         },
@@ -41,16 +41,18 @@
                 "LSUIElement": true,
                 "NSAppleEventsUsageDescription": "dock-switch needs automation permission to focus and place application windows."
             },
-            "identity": "Apple Development: LONGBIAO CHEN (YRQ5DV25KM)",
+            "identity": null,
             "hardenedRuntime": true,
             "timestamp": "none",
-        "entitlements": "resources/entitlements.mac.plist",
-        "entitlementsInherit": "resources/entitlements.mac.plist",
+            "entitlements": "resources/entitlements.mac.plist",
+            "entitlementsInherit": "resources/entitlements.mac.plist",
             "target": "dir"
         },
-        "extraResources": [{
-            "from": "native/settings-app/build/DockSwitchSettings.app",
-            "to": "DockSwitchSettings.app"
-        }]
+        "extraResources": [
+            {
+                "from": "native/settings-app/build/DockSwitchSettings.app",
+                "to": "DockSwitchSettings.app"
+            }
+        ]
     }
 }

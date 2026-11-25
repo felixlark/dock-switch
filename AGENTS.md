@@ -1,5 +1,12 @@
 # Dock-Switch Runbook
 
+
+## 团队项目职责
+
+- 项目组由**主任**负责 HOW、任务分配、依赖、发布与结果闭环，**专员**承办已授权成果并提交测试、变更及真实运行证据。
+- 目标与重要取舍由用户同 **ChatGPT 办公室**（秘书长 Bot／秘书）议定；本项目正式任务与跨组织公文通过 GitHub Issue／PR 流转，项目组内部在已授权范围使用 A2A。
+- 共用制度以 [Cabinet/GOVERNANCE.md](https://github.com/smart-shadow/Cabinet/blob/main/GOVERNANCE.md) 为正本，版本校验见[同步规范](https://github.com/smart-shadow/Cabinet/blob/main/organization/source-sync.md)。本仓 `AGENTS.md` 保留当前项目专业边界和执行方法。
+
 ## Repo Scope
 
 - Owner/escalation: repository maintainer for local display/window launcher behavior.
@@ -21,7 +28,7 @@
 | --- | --- | --- | --- |
 | Verify display labels before placement work | `node bin/dock-switch-cli.js displays` | Display labels and bounds are current | Re-map display-target logic from live labels before editing config |
 | Change launcher/window behavior | `node --test test/<name>.test.js` then `yarn dist` | Tests pass and `/Applications/dock-switch.app` is replaced by the new build | Reinstall previous app bundle from backup or revert only the touched source files |
-| Refresh Karabiner single-key launcher mapping | `yarn karabiner:f20` then `yarn karabiner:f20:check` | Right Command alone toggles the HUD via F20, preserving Command chords; Caps Lock passes through for system input-source switching; F3/F6 remain direct app shortcuts and Shift stays default | Inspect `/Users/longbiao/.config/karabiner/karabiner.json` with `jq empty` and rerun the script |
+| Refresh Karabiner single-key launcher mapping | `yarn karabiner:f20` then `yarn karabiner:f20:check` | Right Command alone toggles the HUD via F20, preserving Command chords; Caps Lock passes through for system input-source switching; F3 opens the ChatGPT Chrome Web app with `side_left_fill`, F6 opens the SmartShadow main window with `internal_fill`, and Shift stays default | Inspect `~/.config/karabiner/karabiner.json` with `jq empty` and rerun the script |
 | Place Computer Use browser beside Codex | `node scripts/place-computer-use-browser.js` | `Google Chrome` moves to the right half of the focused Codex display | Focus the intended Codex window and rerun; if stale, reset the Computer Use binding |
 
 ## Troubleshooting
@@ -61,7 +68,7 @@
 
 ## Development Workflow
 
-- Follow the global `~/.codex/AGENTS.md` and workspace `/Users/longbiao/Documents/AGENTS.md` development workflow: work in the canonical checkout with one writer and do not create new worktrees.
+- Follow the global `~/.codex/AGENTS.md` and the workspace development workflow: work in the canonical checkout with one writer and do not create new worktrees.
 - Use a task branch in the canonical checkout only when the task needs one; do not create manual worktree directories.
 - Put reusable build caches and DerivedData in `~/Library/Caches/<project-id>/`, runtime state, data, tool repositories and active releases in `~/Library/Application Support/<project-id>/`, logs in `~/Library/Logs/<project-id>/`, and human-facing documents in `~/Documents/<mainline>/<project>/` (do not write anything new to `~/Local`; retain transition symlinks only and delete it once empty), and one-run scratch in a directory created by `mktemp -d` under `$TMPDIR`, removed after use; pass output paths explicitly.
 - Preserve existing dirty checkouts. Inspect `git status --short` before editing, and do not stash, commit, remove, migrate or clean user changes and pre-existing residue unless explicitly asked with an exact scope.

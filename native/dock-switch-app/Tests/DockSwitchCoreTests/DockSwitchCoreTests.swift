@@ -682,24 +682,24 @@ final class DockSwitchCoreTests: XCTestCase {
         XCTAssertEqual(Gokit5Serial.parseButtonLine("I (123) VolcRTCApp: Heap Info"), "")
 
         let minus = Gokit5Serial.action(for: "minus")
-        XCTAssertEqual(minus?.mouseTarget, "side_left")
+        XCTAssertEqual(minus?.mouseTarget, "external")
         XCTAssertNil(minus?.codexTarget)
         XCTAssertNil(minus?.placement)
         XCTAssertNil(minus?.openPath)
 
         let voice = Gokit5Serial.action(for: "voice")
-        XCTAssertEqual(voice?.mouseTarget, "external")
+        XCTAssertEqual(voice?.mouseTarget, "side_right")
         XCTAssertNil(voice?.codexTarget)
         XCTAssertNil(voice?.placement)
 
         let switchAction = Gokit5Serial.action(for: "switch")
-        XCTAssertEqual(switchAction?.mouseTarget, "side_right")
+        XCTAssertEqual(switchAction?.mouseTarget, "internal")
         XCTAssertNil(switchAction?.codexTarget)
         XCTAssertNil(switchAction?.placement)
         XCTAssertNil(switchAction?.openPath)
 
         let green = Gokit5Serial.action(for: "green")
-        XCTAssertEqual(green?.mouseTarget, "side_right")
+        XCTAssertEqual(green?.mouseTarget, "internal")
         XCTAssertNil(green?.codexTarget)
         XCTAssertNil(green?.placement)
         XCTAssertNil(green?.kind)
@@ -707,7 +707,7 @@ final class DockSwitchCoreTests: XCTestCase {
         XCTAssertNil(green?.appURL)
 
         let plus = Gokit5Serial.action(for: "plus")
-        XCTAssertEqual(plus?.mouseTarget, "internal")
+        XCTAssertEqual(plus?.mouseTarget, "side_left")
         XCTAssertNil(plus?.codexTarget)
         XCTAssertNil(plus?.placement)
         XCTAssertNil(plus?.kind)

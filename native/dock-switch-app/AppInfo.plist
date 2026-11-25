@@ -2,37 +2,61 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CFBundleDevelopmentRegion</key>
-    <string>en</string>
-    <key>CFBundleExecutable</key>
-    <string>dock-switch</string>
-    <key>CFBundleIdentifier</key>
-    <string>me.longbiaochen.dock-switch</string>
-    <key>CFBundleInfoDictionaryVersion</key>
-    <string>6.0</string>
-    <key>CFBundleName</key>
-    <string>dock-switch</string>
-    <key>CFBundleDisplayName</key>
-    <string>dock-switch</string>
-    <key>CFBundlePackageType</key>
-    <string>APPL</string>
-    <key>CFBundleSupportedPlatforms</key>
-    <array>
-        <string>MacOSX</string>
-    </array>
-    <key>CFBundleShortVersionString</key>
-    <string>1.0.2</string>
-    <key>CFBundleVersion</key>
-    <string>1</string>
-    <key>LSMinimumSystemVersion</key>
-    <string>13.0</string>
-    <key>LSUIElement</key>
-    <true/>
-    <key>NSAppleEventsUsageDescription</key>
-    <string>dock-switch needs automation permission to show and restore the Dock.</string>
-    <key>NSInputMonitoringUsageDescription</key>
-    <string>dock-switch listens for the F20 launcher shortcut.</string>
-    <key>NSAccessibilityUsageDescription</key>
-    <string>dock-switch uses Accessibility to read Dock items and place windows.</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleExecutable</key>
+	<string>DockSwitch</string>
+	<key>CFBundleIdentifier</key>
+	<string>io.github.felixlark.dock-switch</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleIconFile</key>
+	<string>icon</string>
+	<key>CFBundleName</key>
+	<string>dock-switch</string>
+	<key>CFBundleDisplayName</key>
+	<string>dock-switch</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleSupportedPlatforms</key>
+	<array>
+		<string>MacOSX</string>
+	</array>
+	<key>CFBundleShortVersionString</key>
+	<string>1.1.1</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>DTCompiler</key>
+	<string>com.apple.compilers.llvm.clang.1_0</string>
+	<key>DTPlatformBuild</key>
+	<string>25F5057f</string>
+	<key>DTPlatformName</key>
+	<string>macosx</string>
+	<key>DTPlatformVersion</key>
+	<string>26.5</string>
+	<key>DTSDKBuild</key>
+	<string>25F5057f</string>
+	<key>DTSDKName</key>
+	<string>macosx26.5</string>
+	<key>DTXcode</key>
+	<string>2620</string>
+	<key>DTXcodeBuild</key>
+	<string>17A400</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>13.0</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>dock-switch needs automation permission to show and restore the Dock.</string>
+	<key>NSInputMonitoringUsageDescription</key>
+	<string>dock-switch listens for the F20 launcher shortcut.</string>
+	<key>NSAccessibilityUsageDescription</key>
+	<string>dock-switch uses Accessibility to read Dock items and place windows.</string>
+	<key>DockSwitchDataNamespace</key>
+	<string>io.github.felixlark.dock-switch</string>
 </dict>
 </plist>

@@ -7,21 +7,22 @@ const DEFAULT_DEBOUNCE_MS = 0;
 const DEFAULT_SERIAL_NUMBER = "94:A9:90:10:E5:F4";
 const HOST_BUTTON_PREFIX = "GOKIT5_HOST_BUTTON:";
 
+// The controller is mounted 90 degrees clockwise from its original orientation.
 const BUTTON_TO_APP_ACTION = Object.freeze({
     minus: Object.freeze({
-        mouse_target: "side_left"
-    }),
-    voice: Object.freeze({
         mouse_target: "external"
     }),
-    switch: Object.freeze({
+    voice: Object.freeze({
         mouse_target: "side_right"
+    }),
+    switch: Object.freeze({
+        mouse_target: "internal"
     }),
     green: Object.freeze({
-        mouse_target: "side_right"
+        mouse_target: "internal"
     }),
     plus: Object.freeze({
-        mouse_target: "internal"
+        mouse_target: "side_left"
     })
 });
 
